@@ -8,10 +8,22 @@ import matplotlib.pyplot as plt
 
 class data_read(data_load):
     
-    def __init__(self,filename):
+    def __init__(self,stage='agb',galaxy='ngc147'):
         
-        frame=pd.read_parquet(filename)
         
-        self.frame=frame
+        if stage=='agb':
+            path_to_folder='processed_data/agb_data/'
         
+        elif stage=='fore_cut':
+            path_to_folder='processed_data/fore_cut_data/'
+        
+        else:
+            path_to_folder=stage
+        frame=pd.read_parquet(path_to_folder + galaxy)
+        
+        galaxies=['ngc147','ngc185','ngc205','m32']
+        
+        self.data=frame
+        self.galaxy=galaxy
+        self.galaxies=galaxies
         
