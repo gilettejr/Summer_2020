@@ -2,18 +2,28 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+
 #imports for manipulating astronomical data
 from astropy.coordinates import SkyCoord
 from astropy.io import ascii
+
 #extinction correction package
 from dustmaps.sfd import SFDQuery
+
+#curve fitting imports
+from scipy.stats import gaussian_kde,norm
+from scipy.interpolate import make_interp_spline, BSpline
+
+from sklearn import neighbors
+from scipy.signal import savgol_filter
 
 #class for processing starting from the raw WFCAM datasets
 class data_load:
     #reads in and performs initial cuts on data from chosen galaxy
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
-    def __init__(self,galaxy, CLS=True, mag=True, ext=True, path_to_files='initial_data/'):
+    def __init__(self,galaxy, CLS=True, mag=True, ext=True, path_to_file='initial_data/'):
         #not used yet, could be useful later
         #chooses the most recent data based on the highest flag number by default
         #can also specify flag number to choose e.g data removed in foreground cut
@@ -108,7 +118,7 @@ class data_load:
             l=len(frame.jcis.dropna())            
             decrease=100-(l/k)*100
             
-            print('CLS cut reduced data by ' + str(decrease) + '%')
+            print('CLS cut reduced data by ' + str(int(decrease)) + '%')
             
             #for some reason if I put frame=frame.dropna() here it doesn't do anything, so I have to wipe the NaNs outside the function
             
@@ -131,7 +141,7 @@ class data_load:
             
             decrease=100-(l/k)*100
             
-            print('Magerr cut reduced data by ' + str(decrease) + '%')
+            print('Magerr cut reduced data by ' + str(int(decrease)) + '%')
             
         #applies extinction correction to data in DataFrame format    
         
@@ -184,7 +194,12 @@ class data_load:
         
         #names of datafiles
         
-        infilenames=['lot_n147.unique','lot_n185.unique','NGC205_new_trimmed.unique','M32_new.asc']
+        self.galaxies=galaxies
+        self.galaxy=galaxy
+        
+        infilenames=['lot_n147.unique','lot_n185.unique','N205_new_trimmed.unique','M32_new.asc']
+        
+        
         
         #associates galaxy input with appropriate file
         
@@ -204,6 +219,16 @@ class data_load:
         frame=frame.to_pandas()
         
         #columns assigned
+        
+        print(frame)
+        
+        if self.galaxy=='ngc205' or self.galaxy=='m32':
+            
+            frame=frame.drop(['col26'],axis=1)
+            frame=frame.drop(['col25'],axis=1)
+            frame=frame.drop(['col24'],axis=1)
+            frame=frame.drop(['col23'],axis=1)
+        
         
         frame.columns=columnames
 
@@ -236,12 +261,83 @@ class data_load:
         
         self.data=frame
         
+    def forecut(self):
         
+        foredata=self.data.copy()
+        data=self.data
+        
+        forecuts=[0.98,0.98,0.98,0.98]
+        
+        galaxies=self.galaxies
+        
+        for i in range(len(forecuts)):
+            
+            if self.galaxy==galaxies[i]:
+                cut=forecuts[i]
+                break
+        
+        jk=data.jmag-data.kmag
+        
+        for i in data.index:
+            
+            if jk[i] < cut:
+                
+                data.loc[i]=np.nan
+                
+            else:
+                foredata.loc[i]=np.nan
+        k=len(data.copy())
+        data=data.dropna()
+        foredata=foredata.dropna()
+        decrease=100-(len(data)/k) * 100
+        
+        print('Foreground cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
+        
+        self.foredata=foredata
+        
+    def trgbcut(self):
+        
+        data=self.data
+        rgbdata=self.data.copy()
+        trgbcuts=[18.13,17.84,17.9,17.9]
+        
+        galaxies=self.galaxies
+        
+        for i in range(len(galaxies)):
+            
+            if self.galaxy==galaxies[i]:
+                
+                cut=trgbcuts[i]
+                break
+                
+        
+        for i in data.index:
+            
+            if data.kmag[i] > cut:
+                
+                data.loc[i]=np.nan
+                
+            else:
+                
+                rgbdata.loc[i]=np.nan
+                
+                
+                
+        k=len(data.copy())
+        data=data.dropna()
+        rgbdata=rgbdata.dropna()
+        
+        decrease=100-(len(data)/k) * 100
+        
+        print('Foreground cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
+        
+        self.rgbdata=rgbdata
+    
     def plot_kj_cmd(self,marker='o',markersize=1,color='blue'):
         
         data=self.data
         
-        print(data)
+
 
         plt.figure()        
         plt.rc('axes',labelsize = 15)
@@ -250,11 +346,92 @@ class data_load:
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
         
+    
+    def plot_lum(self):
         
-    #method to save data as binary parquet file, to be used by data_read class    
+        data=self.data
+        
+        lum_func=data.kmag
+        
+        plt.figure()
+        
+
+        sns.kdeplot(lum_func.dropna(),color='white',gridsize=100)
+        plt.xlabel('$K_0$')
+        line = plt.gca().get_lines()[0]
+        xd = line.get_xdata()
+        yd = line.get_ydata()
+        
+        diffy = np.diff(yd) / np.diff(xd)
+        diffx = (np.array(xd)[:-1] + np.array(xd)[1:]) / 2
+        
+        #plt.plot(diffx,diffy,label='diff_lum_func')
+        
+        twodiffy = np.diff(diffy) / np.diff(diffx)
+        twodiffx = (np.array(diffx)[:-1] + np.array(diffx)[1:]) / 2        
+        
+        #plt.plot(twodiffx,twodiffy)
+        
+        # 300 represents number of points to make between T.min and T.max
+        xnew = np.linspace(twodiffx.min(), twodiffx.max(), 300) 
+        
+        spl = make_interp_spline(twodiffx, twodiffy, k=3)  # type: BSpline
+        ynew = spl(xnew)
+        
+        plt.plot(xnew, ynew,label='diff2_lum_func')
+        plt.legend()
+        plt.show()
+    
+    def trgbfind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov'):
+    # Set the data to find the TRGB
+        mk = self.data.kmag.dropna()
+        dmk = self.data.kerr.dropna()
+            
+        #Initialise stuff
+        niter = niter           # Number of itterations 
+        rtol = 1e-5             # Relative tolerance of the result
+        kernel = 'epanechnikov' # Parabolic kernel for the KDE
+        
+        mx = np.linspace(max(mk)*1.2, min(mk)*0.8, 1000)
+        trgbloc = np.zeros(niter)
+        
+        #----------------------------------------
+        #Generate NITER realisations of the Kernel Density Estimation
+        for i in range(niter):
+            msamp = np.random.normal(mk, dmk)     # Add Noise to data -> diff. each loop -> more reliable TRGB
+            
+            # Find an ideal binwidth for the luminosity function  
+            # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
+            
+            bandwidth_factor = 0.25
+            bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
+                
+            #----------------------------------------
+            # Implement the Kernel density estimation using a KD Tree for efficient queries 
+            
+            kde = neighbors.KernelDensity(bandwidth = bandwidth, rtol = rtol, kernel = kernel)  # Inialise
+            kde.fit(msamp[:, np.newaxis])        # Fit the Kernel Density model on the data. 
+            #kde.score_samples returns ln(pdf)   # Evaluate the density model on data - probablility density function
+            pdf = np.exp(kde.score_samples(mx[:, np.newaxis]))  #MX is x-axis range which the PDF is computed/plotted.
+            
+            #----------------------------------------
+            # Set the Edge Detection part using a savgol_filter
+            
+            smooth_window = 31
+            poly_degree = 3
+            dpdf = savgol_filter(pdf, smooth_window, poly_degree, deriv = 1)
+            trgbloc[i] = mx[np.argmin(dpdf)]     # Most negative value corresponds to highest rate of decrease 
+            
+        trgbloc_mean = np.mean(trgbloc)  # Find the TRGB
+        trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
+        
+        return trgbloc_mean, trgbloc_sd
+            
+            
+        #method to save data as binary parquet file, to be used by data_read class    
     def save_to_parquet(self,fileloc):
-        
-        self.frame.to_parquet(fileloc)
+            
+        self.data.to_parquet(fileloc)
         
         
         

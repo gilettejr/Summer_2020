@@ -8,10 +8,13 @@ import matplotlib.pyplot as plt
 
 class data_read(data_load):
     
-    def __init__(self,filename):
+    def __init__(self,path_to_folder,galaxy='ngc147'):
         
-        frame=pd.read_parquet(filename)
+        frame=pd.read_parquet(path_to_folder + galaxy)
         
-        self.frame=frame
+        galaxies=['ngc147','ngc185','ngc205','m32']
         
+        self.data=frame
+        self.galaxy=galaxy
+        self.galaxies=galaxies
         
