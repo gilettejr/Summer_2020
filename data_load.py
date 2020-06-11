@@ -19,6 +19,13 @@ from sklearn import neighbors
 from scipy.signal import savgol_filter
 
 #class for processing starting from the raw WFCAM datasets
+# =============================================================================
+# __init__ carries out cls, magerr cuts and corrects for reddening, converts
+# data into dataframe format. Adds tangent coordinate and decimal ra/dec
+#coordinates to dataframe, referenced by xi/etc, RA/DEC respectively
+
+#methods: forecut,trgbcut,trgbfind,plot_kj_cmd,plot_spatial,save_as_parquet
+# =============================================================================
 class data_load:
     #reads in and performs initial cuts on data from chosen galaxy
     #change optional arguments to false to skip initial cuts
@@ -59,14 +66,14 @@ class data_load:
             
             frame['DEC']=coords[1]
             
-        def make_tan_coord(frame):
+        def make_tan_coord(frame,galaxy):
             
-                def create_tangent_coords(tangentra,tangentdec):
+                def create_tangent_coords(frame,tangentra,tangentdec):
         
         #ra and dec attributes converted to variables in radians
         
-                    ra = np.radians(self.ra)
-                    dec = np.radians(self.dec)
+                    ra = np.radians(frame.RA)
+                    dec = np.radians(frame.DEC)
                     
                     #tangent co-ordinates also converted to radians
                     
@@ -83,25 +90,25 @@ class data_load:
                     
                     #co-ordinates converted to degrees and set as attributes
                     
-                    self.xi = xi * (180/np.pi)
-                    self.eta = eta * (180/np.pi)
+                    xi = xi * (180/np.pi)
+                    eta = eta * (180/np.pi)
                     
-                    return (np.array([self.xi,self.eta]))
+                    return (np.array([xi,eta]))
                 
-                if frame.galaxy=='ngc147':
+                if galaxy=='ngc147':
                     tra=8.300500
                     tdec=48.50850
-                elif frame.galaxy=='ngc185':
+                elif galaxy=='ngc185':
                     tra=9.7415417
                     tdec=48.3373778
-                elif frame.galaxy=='ngc205':
+                elif galaxy=='ngc205':
                     tra=10.09189356
                     tdec=41.68541564
-                elif frame.galaxy=='m32':
+                elif galaxy=='m32':
                     tra=10.6742708
                     tdec=40.8651694
                     
-                coords=create_tangent_coords(tra,tdec)
+                coords=create_tangent_coords(frame,tra,tdec)
                 
                 frame['xi']=coords[0]
                 frame['eta']=coords[1]
@@ -110,10 +117,18 @@ class data_load:
         
         def CLS_cut(frame):
             
+            if self.galaxy=='m32':
+                for i in range(len(frame.jcis)):
+                
+                    if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0):
+                        frame.loc[i]=np.nan
+            
+            else:
+            
             #removes any non-stellar sources from data
-            for i in range(len(frame.jcis)):
-                if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
-                    frame.loc[i]=np.nan
+                for i in range(len(frame.jcis)):
+                    if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
+                        frame.loc[i]=np.nan
             
             #percentage decrease of catalogue length calculated and printed
             
@@ -238,7 +253,7 @@ class data_load:
         
         #functions called to create decimal coordinate columns and flag column
         make_deg_coord(frame)
-        make_flag_col(frame)
+        make_tan_coord(frame,self.galaxy)
         
         #optional skip when initiating class for the cuts/extinction corrections
         
@@ -269,7 +284,7 @@ class data_load:
         foredata=self.data.copy()
         data=self.data
         
-        forecuts=[0.98,0.98,0.965,0.98]
+        forecuts=[0.98,0.98,0.965,0.60]
         
         galaxies=self.galaxies
         
@@ -302,7 +317,7 @@ class data_load:
         
         data=self.data
         rgbdata=self.data.copy()
-        trgbcuts=[18.13,17.84,17.94,17.9]
+        trgbcuts=[18.13,17.84,17.94,16.9]
         
         galaxies=self.galaxies
         
@@ -348,6 +363,27 @@ class data_load:
         plt.gca().invert_yaxis()
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
+        
+    def plot_cc(self,marker='o',markersize=1,color='black'):
+        
+        data=self.data
+        
+        plt.figure()        
+        plt.rc('axes',labelsize = 15)
+        plt.plot(data.jmag - data.hmag,data.hmag-data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
+        plt.ylabel('$H_0$-$K_0$')
+        plt.xlabel('$J_0$-$H_0$')
+        
+    def plot_spatial(self,marker='o',markersize=1,color='black'):
+        
+        data=self.data
+        
+        plt.rc('axes',labelsize=20)
+        plt.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color='black')
+        plt.gca().set_ylabel(r'$\eta$')
+        plt.gca().set_xlabel(r'$\xi$')
+        plt.gca().invert_xaxis()
+        plt.show()
         
     
     def plot_lum(self):
