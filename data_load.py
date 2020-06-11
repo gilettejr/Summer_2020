@@ -24,39 +24,8 @@ class data_load:
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
     def __init__(self,galaxy, CLS=True, mag=True, ext=True, path_to_file='initial_data/'):
-        #not used yet, could be useful later
-        #chooses the most recent data based on the highest flag number by default
-        #can also specify flag number to choose e.g data removed in foreground cut
-        def plotting_select(data,plot='max'):
-            
-            #default,takes highest flag
-            
-            if plot=='max':
-                #loop finds highest flag (most processed) data, wipes all other data for plotting
-                
-                for i in range(len(data.kmag)):
-                
-                    if data.flag[i]!=np.max(data.flag):
-                        
-                        data.loc[i]=np.nan
-            #if specific flag number was chosen in optinal argument, only data with that flag is retained
-            
-            else:
-                
-                for i in range(len(data.kmag)):
-                    
-                
-                    if data.flag[i]!=int(plot):
-                        
-                        data.loc[i]=np.nan
-                    
-            #returns flag specified data, wipes all NaN values
-            
-            return(data.dropna())
-            
-        #class method for use in plotting methods
-        
-        self.plotting_select=plotting_select
+
+
         
         #convert hhmmss ra and ddmmss dec into decimal values
         
@@ -89,20 +58,54 @@ class data_load:
             frame['RA']=coords[0]
             
             frame['DEC']=coords[1]
-                
-                
-        #adds flag column with initial 0 value to DataFrame, for retaining and identifying data from cuts
+            
+        def make_tan_coord(frame):
+            
+                def create_tangent_coords(tangentra,tangentdec):
         
-        def make_flag_col(frame):
-            
-            #column of 0s created
-            
-            flag=np.zeros(len(frame))
-            
-            #added to dataframe
-            
-            frame['flag']=flag
+        #ra and dec attributes converted to variables in radians
         
+                    ra = np.radians(self.ra)
+                    dec = np.radians(self.dec)
+                    
+                    #tangent co-ordinates also converted to radians
+                    
+                    tanra = np.radians(tangentra)
+                    tandec = np.radians(tangentdec)
+                    
+                    #conversion for xi carried out
+                    
+                    xi = (np.cos(dec)*np.sin(ra-tanra))/(np.sin(dec)*np.sin(tandec) + np.cos(dec)*np.cos(tandec)*np.cos(ra-tanra))
+                    
+                    #conversion for eta carried out
+                    
+                    eta = (np.sin(dec)*np.cos(tandec)-np.cos(dec)*np.sin(tandec)*np.cos(ra-tanra))/(np.sin(dec)*np.cos(tandec)+np.cos(dec)*np.sin(tandec)*np.cos(ra-tanra))
+                    
+                    #co-ordinates converted to degrees and set as attributes
+                    
+                    self.xi = xi * (180/np.pi)
+                    self.eta = eta * (180/np.pi)
+                    
+                    return (np.array([self.xi,self.eta]))
+                
+                if frame.galaxy=='ngc147':
+                    tra=8.300500
+                    tdec=48.50850
+                elif frame.galaxy=='ngc185':
+                    tra=9.7415417
+                    tdec=48.3373778
+                elif frame.galaxy=='ngc205':
+                    tra=10.09189356
+                    tdec=41.68541564
+                elif frame.galaxy=='m32':
+                    tra=10.6742708
+                    tdec=40.8651694
+                    
+                coords=create_tangent_coords(tra,tdec)
+                
+                frame['xi']=coords[0]
+                frame['eta']=coords[1]
+                    
         #function to cut DataFrame based on cls index
         
         def CLS_cut(frame):
@@ -266,7 +269,7 @@ class data_load:
         foredata=self.data.copy()
         data=self.data
         
-        forecuts=[0.98,0.98,0.98,0.98]
+        forecuts=[0.98,0.98,0.965,0.98]
         
         galaxies=self.galaxies
         
@@ -299,7 +302,7 @@ class data_load:
         
         data=self.data
         rgbdata=self.data.copy()
-        trgbcuts=[18.13,17.84,17.9,17.9]
+        trgbcuts=[18.13,17.84,17.94,17.9]
         
         galaxies=self.galaxies
         
