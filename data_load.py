@@ -357,8 +357,8 @@ class data_load:
         mdata=data.copy()
         cdata=data.copy()
         
-        hkcuts=[0.44,0.44,0.60,0]
-        jhcuts=[0.82,0.82,0.77,0]
+        hkcuts=[0.44,0.44,0.60,0.6]
+        jhcuts=[0.82,0.82,0.77,0.77]
         
         for i in range(len(self.galaxies)):
             
@@ -375,7 +375,7 @@ class data_load:
                 
     
         hk=data.hmag-data.kmag
-        jh=data.jamg-data.hmag
+        jh=data.jmag-data.hmag
         
         for i in data.index:
             
@@ -395,9 +395,25 @@ class data_load:
         
     
     
-    def plot_kj_cmd(self,marker='o',markersize=1,color='blue'):
+    def plot_kj_cmd(self,stars='all',marker='o',markersize=1,color='blue'):
         
-        data=self.data
+        if stars=='c':
+            
+            data=self.cdata
+            
+        elif stars=='m':
+            
+            data=self.mdata
+        
+        elif stars=='c+m' :
+        
+            data=self.mdata.append(self.cdata)
+            
+        else:
+            
+            data=self.data
+            
+        
         
 
 
@@ -408,9 +424,24 @@ class data_load:
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
         
-    def plot_cc(self,marker='o',markersize=1,color='black'):
+    def plot_cc(self,stars='all',marker='o',markersize=1,color='black'):
         
-        data=self.data
+        if stars=='c':
+            
+            data=self.cdata
+            
+        elif stars=='m':
+            
+            data=self.mdata
+        
+        elif stars=='c+m' :
+        
+            data=self.mdata.append(self.cdata)
+            
+        else:
+            
+            data=self.data
+            
         
         plt.figure()        
         plt.rc('axes',labelsize = 15)
@@ -419,9 +450,24 @@ class data_load:
         plt.ylabel('$H_0$-$K_0$')
         plt.xlabel('$J_0$-$H_0$')
         
-    def plot_spatial(self,marker='o',markersize=1,color='black'):
+    def plot_spatial(self,stars='all',marker='o',markersize=1,color='black'):
         
-        data=self.data
+        if stars=='c':
+            
+            data=self.cdata
+            
+        elif stars=='m':
+            
+            data=self.mdata
+        
+        elif stars=='c+m' :
+        
+            data=self.mdata.append(self.cdata)
+            
+        else:
+            
+            data=self.data
+            
         
         plt.rc('axes',labelsize=20)
         plt.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color='black')
@@ -510,6 +556,20 @@ class data_load:
         trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
         
         return trgbloc_mean, trgbloc_sd
+    
+    def FEH_find(self):
+        
+        def CM_to_FEH(CM):
+        
+            FEH=-1.39 -0.47*np.log10(CM)
+        
+            return(FEH)
+            
+        CM=len(self.cdata)/len(self.mdata)
+        
+        FEH=CM_to_FEH(CM)
+        
+        print('C/M = ' + str(CM) + ' [Fe/H] = ' + str(FEH))
             
             
         #method to save data as binary parquet file, to be used by data_read class    
@@ -520,6 +580,9 @@ class data_load:
     def cm_save_to_parquet(self,mfileloc,cfileloc):
         
         self.mdata.to_parquet(mfileloc)
+        
+        
+        self.cdata.to_parquet(cfileloc)
         
         
         
