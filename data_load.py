@@ -120,7 +120,7 @@ class data_load:
             if self.galaxy=='m32':
                 for i in range(len(frame.jcis)):
                 
-                    if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0):
+                    if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or frame.jmag[i]-frame.hmag[i] > 17:
                         frame.loc[i]=np.nan
             
             else:
@@ -284,7 +284,7 @@ class data_load:
         foredata=self.data.copy()
         data=self.data
         
-        forecuts=[0.98,0.98,0.965,0.60]
+        forecuts=[0.98,0.98,0.965,0.92]
         
         galaxies=self.galaxies
         
@@ -350,6 +350,45 @@ class data_load:
         print('Foreground cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
         
         self.rgbdata=rgbdata
+        
+    def CM_cut(self):
+        
+        data=self.data
+        mdata=data.copy()
+        cdata=data.copy()
+        
+        hkcuts=[0,0,0,0]
+        jhcuts=[0,0,0,0]
+        
+        for i in range(len(self.galaxies)):
+            
+            if self.galaxies[i]==self.galaxy:
+                
+                hkcut=hkcuts[i]
+                jhcut=jhcuts[i]
+                
+                break
+            
+            
+        
+                
+                
+    
+        hk=data.hmag-data.kmag
+        jh=data.jamg-data.hmag
+        
+        for i in data.index:
+            
+            if hk[i] > hkcut and jh[i] > jhcut:
+                
+                mdata.loc[i]=np.nan
+                
+            else:
+                
+                cdata.loc[i]=np.nan
+                
+        mdata=mdata.dropna()
+        cdata=cdata.dropna()
     
     def plot_kj_cmd(self,marker='o',markersize=1,color='blue'):
         
@@ -371,6 +410,7 @@ class data_load:
         plt.figure()        
         plt.rc('axes',labelsize = 15)
         plt.plot(data.jmag - data.hmag,data.hmag-data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
+
         plt.ylabel('$H_0$-$K_0$')
         plt.xlabel('$J_0$-$H_0$')
         
