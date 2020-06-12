@@ -357,8 +357,8 @@ class data_load:
         mdata=data.copy()
         cdata=data.copy()
         
-        hkcuts=[0,0,0,0]
-        jhcuts=[0,0,0,0]
+        hkcuts=[0.44,0.44,0.60,0]
+        jhcuts=[0.82,0.82,0.77,0]
         
         for i in range(len(self.galaxies)):
             
@@ -389,6 +389,11 @@ class data_load:
                 
         mdata=mdata.dropna()
         cdata=cdata.dropna()
+        
+        self.mdata=mdata
+        self.cdata=cdata
+        
+    
     
     def plot_kj_cmd(self,marker='o',markersize=1,color='blue'):
         
@@ -511,6 +516,12 @@ class data_load:
     def save_to_parquet(self,fileloc):
             
         self.data.to_parquet(fileloc)
+        
+    def cm_save_to_parquet(self,mfileloc,cfileloc):
+        
+        self.mdata.to_parquet(mfileloc)
+        
+        
         
         
         
