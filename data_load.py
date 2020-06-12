@@ -120,7 +120,7 @@ class data_load:
             if self.galaxy=='m32':
                 for i in range(len(frame.jcis)):
                 
-                    if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0):
+                    if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or frame.jmag[i]-frame.hmag[i] > 17:
                         frame.loc[i]=np.nan
             
             else:
@@ -284,7 +284,7 @@ class data_load:
         foredata=self.data.copy()
         data=self.data
         
-        forecuts=[0.98,0.98,0.965,0.60]
+        forecuts=[0.98,0.98,0.965,0.92]
         
         galaxies=self.galaxies
         
@@ -350,10 +350,70 @@ class data_load:
         print('Foreground cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
         
         self.rgbdata=rgbdata
-    
-    def plot_kj_cmd(self,marker='o',markersize=1,color='blue'):
+        
+    def CM_cut(self):
         
         data=self.data
+        mdata=data.copy()
+        cdata=data.copy()
+        
+        hkcuts=[0.44,0.44,0.60,0.6]
+        jhcuts=[0.82,0.82,0.77,0.77]
+        
+        for i in range(len(self.galaxies)):
+            
+            if self.galaxies[i]==self.galaxy:
+                
+                hkcut=hkcuts[i]
+                jhcut=jhcuts[i]
+                
+                break
+            
+            
+        
+                
+                
+    
+        hk=data.hmag-data.kmag
+        jh=data.jmag-data.hmag
+        
+        for i in data.index:
+            
+            if hk[i] > hkcut and jh[i] > jhcut:
+                
+                mdata.loc[i]=np.nan
+                
+            else:
+                
+                cdata.loc[i]=np.nan
+                
+        mdata=mdata.dropna()
+        cdata=cdata.dropna()
+        
+        self.mdata=mdata
+        self.cdata=cdata
+        
+    
+    
+    def plot_kj_cmd(self,stars='all',marker='o',markersize=1,color='blue'):
+        
+        if stars=='c':
+            
+            data=self.cdata
+            
+        elif stars=='m':
+            
+            data=self.mdata
+        
+        elif stars=='c+m' :
+        
+            data=self.mdata.append(self.cdata)
+            
+        else:
+            
+            data=self.data
+            
+        
         
 
 
@@ -364,19 +424,50 @@ class data_load:
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
         
-    def plot_cc(self,marker='o',markersize=1,color='black'):
+    def plot_cc(self,stars='all',marker='o',markersize=1,color='black'):
         
-        data=self.data
+        if stars=='c':
+            
+            data=self.cdata
+            
+        elif stars=='m':
+            
+            data=self.mdata
+        
+        elif stars=='c+m' :
+        
+            data=self.mdata.append(self.cdata)
+            
+        else:
+            
+            data=self.data
+            
         
         plt.figure()        
         plt.rc('axes',labelsize = 15)
         plt.plot(data.jmag - data.hmag,data.hmag-data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
+
         plt.ylabel('$H_0$-$K_0$')
         plt.xlabel('$J_0$-$H_0$')
         
-    def plot_spatial(self,marker='o',markersize=1,color='black'):
+    def plot_spatial(self,stars='all',marker='o',markersize=1,color='black'):
         
-        data=self.data
+        if stars=='c':
+            
+            data=self.cdata
+            
+        elif stars=='m':
+            
+            data=self.mdata
+        
+        elif stars=='c+m' :
+        
+            data=self.mdata.append(self.cdata)
+            
+        else:
+            
+            data=self.data
+            
         
         plt.rc('axes',labelsize=20)
         plt.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color='black')
@@ -465,12 +556,35 @@ class data_load:
         trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
         
         return trgbloc_mean, trgbloc_sd
+    
+    def FEH_find(self):
+        
+        def CM_to_FEH(CM):
+        
+            FEH=-1.39 -0.47*np.log10(CM)
+        
+            return(FEH)
+            
+        CM=len(self.cdata)/len(self.mdata)
+        
+        FEH=CM_to_FEH(CM)
+        
+        print('C/M = ' + str(CM) + ' [Fe/H] = ' + str(FEH))
             
             
         #method to save data as binary parquet file, to be used by data_read class    
     def save_to_parquet(self,fileloc):
             
         self.data.to_parquet(fileloc)
+        
+    def cm_save_to_parquet(self,mfileloc,cfileloc):
+        
+        self.mdata.to_parquet(mfileloc)
+        
+        
+        self.cdata.to_parquet(cfileloc)
+        
+        
         
         
         
