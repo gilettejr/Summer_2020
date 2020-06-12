@@ -15,9 +15,13 @@ from dustmaps.sfd import SFDQuery
 from scipy.stats import gaussian_kde,norm
 from scipy.interpolate import make_interp_spline, BSpline
 
+#libraries for finding trgb
 from sklearn import neighbors
 from scipy.signal import savgol_filter
 
+#libraries for seperating C and M with non horizontal/perpendicular lines
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
 #class for processing starting from the raw WFCAM datasets
 # =============================================================================
 # __init__ carries out cls, magerr cuts and corrects for reddening, converts
@@ -219,7 +223,7 @@ class data_load:
         
         
         
-        #associates galaxy input with appropriate file
+        #associate galaxy input with appropriate file
         
         for i in range(len(infilenames)):
                 
@@ -278,15 +282,29 @@ class data_load:
         #data set as class attribute
         
         self.data=frame
-        
+    
+    
+    #remove bluer foreground data above a specified blue limit
     def forecut(self):
         
+        #create copy to hold cut data for completeness
+        
         foredata=self.data.copy()
+        
+        #set class attribute for frame holding data to variable for ease
+        
         data=self.data
+        
+        #set galaxy name list to variable for matching between cut and galaxy
+        
+        galaxies=self.galaxies
+        
+        #cuts for each galaxy placed in list. Defined from inspection of
+        #j-k CMD
         
         forecuts=[0.98,0.98,0.965,0.92]
         
-        galaxies=self.galaxies
+        #loop through galaxies to match galaxy with foreground cut
         
         for i in range(len(forecuts)):
             
@@ -294,7 +312,12 @@ class data_load:
                 cut=forecuts[i]
                 break
         
+        #j-k colour defined for data
+        
         jk=data.jmag-data.kmag
+        
+        #remove foreground sources in data, retain only foreground sources
+        #in foredata
         
         for i in data.index:
             
@@ -304,6 +327,10 @@ class data_load:
                 
             else:
                 foredata.loc[i]=np.nan
+        
+        #find % decrease in sources after foreground cut
+        #wipe NaN values from DataFrames     
+        
         k=len(data.copy())
         data=data.dropna()
         foredata=foredata.dropna()
@@ -311,13 +338,27 @@ class data_load:
         
         print('Foreground cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
         
-        self.foredata=foredata
+        #set foreground dataframe as attribute so it can be accessed
         
+        self.foredata=foredata
+
+
+    #method to cut all data below a certain defined magnitude
+
     def trgbcut(self):
+        
+        #similar process as in forecut
+        #set attributes to variables, for holding data with rgb stars removed
+        #and also for holding just rgb stars
         
         data=self.data
         rgbdata=self.data.copy()
+        
+        #cuts defined from running trgbtip on foreground removed data
+        
         trgbcuts=[18.13,17.84,17.94,16.9]
+        
+        #galaxies attribute used to match galaxy to associated trgb cut
         
         galaxies=self.galaxies
         
@@ -327,7 +368,9 @@ class data_load:
                 
                 cut=trgbcuts[i]
                 break
-                
+        
+        #make cut on main data attribute, convert rgbdata to frame holding only
+        #cut data (rgb stars)        
         
         for i in data.index:
             
@@ -339,7 +382,7 @@ class data_load:
                 
                 rgbdata.loc[i]=np.nan
                 
-                
+        #% decrease in sources from cuts printed, NaN values purged
                 
         k=len(data.copy())
         data=data.dropna()
@@ -347,18 +390,29 @@ class data_load:
         
         decrease=100-(len(data)/k) * 100
         
-        print('Foreground cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
+        print('RGB cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
+        
+        #set cut data as attribute for completeness
         
         self.rgbdata=rgbdata
-        
+    
+    #separate AGB stars into C and M, using areas defined by boxes in 2D colour space
+    #perpendicular to axes
+    
     def CM_cut(self):
+        
+        #variables set
         
         data=self.data
         mdata=data.copy()
         cdata=data.copy()
         
+        #define cuts in each colour space for each galaxy
+        
         hkcuts=[0.44,0.44,0.60,0.6]
         jhcuts=[0.82,0.82,0.77,0.77]
+        
+        #match galaxy to cut
         
         for i in range(len(self.galaxies)):
             
@@ -371,11 +425,13 @@ class data_load:
             
             
         
-                
+        #set colour arrays
                 
     
         hk=data.hmag-data.kmag
         jh=data.jmag-data.hmag
+        
+        #loop through and separate data into M and C stars based on colour cuts
         
         for i in data.index:
             
@@ -386,16 +442,81 @@ class data_load:
             else:
                 
                 cdata.loc[i]=np.nan
-                
+        
+        #wipe NaN values
+        
         mdata=mdata.dropna()
         cdata=cdata.dropna()
         
         self.mdata=mdata
         self.cdata=cdata
-        
     
+    #separate C and M stars based on defined triangle in 2D colour space
+    
+    def CM_polygon_cut(self):
+        
+        #create copies for holding separated data
+        
+        data=self.data
+        mdata=self.data.copy()
+        cdata=self.data.copy()
+        
+        #define triangle holding C-stars for each galaxy
+        
+        vertex1s=[(0,0),(0,0),(0,0),(0,0)]
+        vertex2s=[(0,0),(0,0),(0,0),(0,0)]
+        vertex3s=[(0,0),(0,0),(0,0),(0,0)]
+        
+        
+        #match galaxy to appropriate triangle
+        
+        for i in range(len(self.galaxies)):
+            
+            if self.galaxies[i]==self.galaxy:
+                
+                vertex1=vertex1s[i]
+                vertex2=vertex2s[i]
+                vertex3=vertex3s[i]
+                
+                break
+        
+        #colours defined
+        
+        hk=data.hmag-data.kmag
+        
+        jh=data.jmag-data.hmag
+        
+        #create triangle between 3 defined vertices surrounding C-stars
+        
+        carea=Polygon([vertex1,vertex2,vertex3])
+        
+        #loop through data, allocate data inside triangle to cdata dataframe
+        #remainder held in mdata dataframe
+        
+        for i in data.index:
+            
+            if carea.contains(Point(jh[i],hk[i])):
+                
+                mdata.loc[i]=np.nan
+                
+            else:
+                
+                cdata.loc[i]=np.nan
+                
+        #wipe NaN values, set data to class attributes
+        
+        mdata=mdata.dropna()
+        mdata=mdata.dropna()
+        
+        self.mdata=mdata
+        self.cdata=cdata
+    
+    #graphing method for plotting j-k cmds
     
     def plot_kj_cmd(self,stars='all',marker='o',markersize=1,color='blue'):
+        
+        #conditional statements plot only c,m, or both sets depending on 
+        #optional stars argument
         
         if stars=='c':
             
@@ -415,7 +536,7 @@ class data_load:
             
         
         
-
+        #axes, figure set, CMD plotted
 
         plt.figure()        
         plt.rc('axes',labelsize = 15)
@@ -423,8 +544,12 @@ class data_load:
         plt.gca().invert_yaxis()
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
-        
+    
+    #graphing method for plotting h-k/j-h 2CD
+    
     def plot_cc(self,stars='all',marker='o',markersize=1,color='black'):
+        
+        #stars argument works in same way as plot_kj_cmd
         
         if stars=='c':
             
@@ -442,6 +567,8 @@ class data_load:
             
             data=self.data
             
+        
+        #axes, figure set, data plotted
         
         plt.figure()        
         plt.rc('axes',labelsize = 15)
@@ -450,8 +577,11 @@ class data_load:
         plt.ylabel('$H_0$-$K_0$')
         plt.xlabel('$J_0$-$H_0$')
         
+    
+    #graphing method for plotting spatial distributions
+    #can plot m, c, all agb stars, or m and c on separate subplots
     def plot_spatial(self,stars='all',marker='o',markersize=1,color='black'):
-        
+    #conditional statement based on stars defines data appropriately
         if stars=='c':
             
             data=self.cdata
@@ -462,20 +592,52 @@ class data_load:
         
         elif stars=='c+m' :
         
-            data=self.mdata.append(self.cdata)
+            mdata=self.mdata
+            cdata=self.cdata
             
         else:
             
             data=self.data
+        
+        #if c+m cnot chosen for stars argument, data plotted in single plot
+        
+        if stars !='c+m':
+        
+            plt.rc('axes',labelsize=20)
+            plt.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color=color)
+            plt.gca().set_ylabel(r'$\eta$')
+            plt.gca().set_xlabel(r'$\xi$')
+            plt.gca().invert_xaxis()
+            plt.show()
+        
+        
+        #if c+m chosen for stars argument, plot c and m stars in subplots
+        else:
             
-        
-        plt.rc('axes',labelsize=20)
-        plt.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color='black')
-        plt.gca().set_ylabel(r'$\eta$')
-        plt.gca().set_xlabel(r'$\xi$')
-        plt.gca().invert_xaxis()
-        plt.show()
-        
+            #shared axes for clarity and ease of comparison
+            
+            fig,axs=plt.subplots(2,1,sharex=True,sharey=True)
+            
+            plt.rc('axes',labelsize=20)
+
+            
+            axs[0].plot(mdata.xi,mdata.eta,linestyle='none',marker=marker,markersize=markersize,color='blue')
+            axs[1].plot(cdata.xi,cdata.eta,linestyle='none',marker=marker,markersize=markersize,color='red')
+            
+            axs[0].set_ylabel(r'$\eta$')
+            axs[1].set_ylabel(r'$\eta$')
+            
+            axs[1].set_xlabel(r'$\xi$')
+            
+            axs[0].set_title('M-AGB')
+            axs[1].set_title('C-AGB')
+            
+            axs[0].invert_xaxis()
+            axs[1].invert_xaxis()
+            
+            
+    #basically redundant method for finding trgb
+    #far less elegant and robust than trgbfind
     
     def plot_lum(self):
         
@@ -557,18 +719,79 @@ class data_load:
         
         return trgbloc_mean, trgbloc_sd
     
+    #method to remove sources crossmatched with gaia, with well measured
+    #parallaxes or proper motions
+    
+    def gaia_remove(self,path):
+        
+        #data variable set
+        
+        data=self.data
+        
+        #csv of crossmatched data produce by topcat read in to DataFrame
+        
+        cross=pd.read_csv(path + self.galaxy)
+        
+        #remove data from foreground removal routine if Gaia noise measurement
+        #is too high
+        
+        for i in range(len(cross.kmag)):
+            
+            if cross.astrometric_excess_noise_sig > 2:
+                
+                cross.loc[i]=np.nan
+                
+        #produce list of indices of sources in original datasets with well measured
+        #parallaxes or proper motions
+        
+        for i in range(len(cross.kmag)):
+            
+            
+            if cross.pmra/cross.pmraerr < 1 or cross.pmdec/cross.pmdecerr < 1:
+                
+                cross.loc[i]=np.nan
+                
+        for i in range(len(cross.kmag)):
+            
+            
+            if cross.parallax_over_error < 1:
+                
+                cross.loc[i]=np.nan
+        
+        #wipe NaN values from index list
+        
+        cross=cross.dropna()
+        
+        #remove sources with matching indices to cross list
+        #to remove foreground data
+        
+        for i in cross.orig_index:
+            
+            data[i]=np.nan
+        
+        #NaN values wiped
+        
+        self.data=data.dropna()
+                
+                
+        
+        
+    #produce C/M ratio and [Fe/H] values from mdata and cdata        
+    
     def FEH_find(self):
         
+        #function performs conversion between CM and [Fe/H] from Cioni(2009)
         def CM_to_FEH(CM):
         
             FEH=-1.39 -0.47*np.log10(CM)
         
             return(FEH)
-            
+        #define c/m ratio
         CM=len(self.cdata)/len(self.mdata)
         
+        #carry out conversion
         FEH=CM_to_FEH(CM)
-        
+        #print out result
         print('C/M = ' + str(CM) + ' [Fe/H] = ' + str(FEH))
             
             
@@ -577,6 +800,7 @@ class data_load:
             
         self.data.to_parquet(fileloc)
         
+        #save m and agb dataframes to separate binary files
     def cm_save_to_parquet(self,mfileloc,cfileloc):
         
         self.mdata.to_parquet(mfileloc)
@@ -584,7 +808,17 @@ class data_load:
         
         self.cdata.to_parquet(cfileloc)
         
+        #save data to _csv, extra index column added for bookkeeping
+        #when taken in by topcat for crossmatching with Gaia DR2
+    def save_to_csv(self,fileloc):
         
+        data=self.data
+        
+        orig_index=data.index
+        
+        data['orig_index']=orig_index
+        
+        data.to_csv(fileloc)
         
         
         

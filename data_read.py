@@ -29,6 +29,7 @@ class data_read(data_load):
             
             self.mdata=mframe
             self.cdata=cframe
+            self.data=mframe.append(cframe)
         else:
             frame=pd.read_parquet(path_to_folder + galaxy)
             
