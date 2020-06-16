@@ -131,7 +131,11 @@ class data_load:
                 elif galaxy=='m32':
                     tra=10.6742708
                     tdec=40.8651694
-                    
+                
+                elif galaxy=='m31':
+                    tra=10.68470833
+                    tdec=41.26875
+                
                 coords=create_tangent_coords(frame,tra,tdec)
                 
                 frame['xi']=coords[0]
@@ -228,18 +232,19 @@ class data_load:
         
         #column headers of WFCAM data defined
         
+        excolumnames=['rah','ram','ras','dd','dm','ds','unknown','xj','yj','jmag','jerr','jcis','xh','yh','hmag','herr','hcis','xk','yk','kmag','kerr','kcis','u1','u2','u3','u4']
         columnames=['rah','ram','ras','dd','dm','ds','unknown','xj','yj','jmag','jerr','jcis','xh','yh','hmag','herr','hcis','xk','yk','kmag','kerr','kcis']
         
         #galaxy list for reading in the correct file
         
-        galaxies=['ngc147','ngc185','ngc205','m32']
+        galaxies=['ngc147','ngc185','ngc205','m32','m31']
         
         #names of datafiles
         
         self.galaxies=galaxies
         self.galaxy=galaxy
         
-        infilenames=['lot_n147.unique','lot_n185.unique','N205_new_trimmed.unique','M32_new.asc']
+        infilenames=['lot_n147.unique','lot_n185.unique','N205_new_trimmed.unique','M32_new.asc','m31_tile4_lot.unique']
         
         
         
@@ -254,24 +259,31 @@ class data_load:
         
         #ascii data read in to astropy table
         
-        frame=ascii.read(path_to_file + file)
+        if galaxy=='m31':
         
-        #converted to dataframe
-        
-        frame=frame.to_pandas()
-        
-        #columns assigned
-        
-        
-        if self.galaxy=='ngc205' or self.galaxy=='m32':
+            frame=pd.read_csv(path_to_file + file,sep="\s+",names=excolumnames)
             
-            frame=frame.drop(['col26'],axis=1)
-            frame=frame.drop(['col25'],axis=1)
-            frame=frame.drop(['col24'],axis=1)
-            frame=frame.drop(['col23'],axis=1)
+        else:
+            
+            frame=ascii.read(path_to_file + file)
+            frame=frame.to_pandas()
+
         
-        
-        frame.columns=columnames
+            #converted to dataframe
+    
+            
+            #columns assigned
+            
+            
+            if self.galaxy=='ngc205' or self.galaxy=='m32':
+                
+                frame=frame.drop(['col26'],axis=1)
+                frame=frame.drop(['col25'],axis=1)
+                frame=frame.drop(['col24'],axis=1)
+                frame=frame.drop(['col23'],axis=1)
+            
+            
+            frame.columns=columnames
 
         
         #functions called to create decimal coordinate columns and flag column
@@ -327,7 +339,7 @@ class data_load:
         #cuts for each galaxy placed in list. Defined from inspection of
         #j-k CMD
         
-        forecuts=[0.98,0.98,0.965,0.92]
+        forecuts=[0.98,0.98,0.965,0.92,1.02]
         
         #loop through galaxies to match galaxy with foreground cut
         
@@ -431,7 +443,7 @@ class data_load:
         
         #cuts defined from running trgbtip on foreground removed data
         
-        trgbcuts=[18.13,17.84,17.94,16.9]
+        trgbcuts=[18.13,17.84,17.94,16.9,17.8]
         
         #galaxies attribute used to match galaxy to associated trgb cut
         
@@ -676,6 +688,38 @@ class data_load:
         plt.gca().invert_yaxis()
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
+        
+    def plot_hk_cmd(self,stars='all',marker='o',markersize=1,color='blue'):
+        
+        #conditional statements plot only c,m, or both sets depending on 
+        #optional stars argument
+        
+        if stars=='c':
+            
+            data=self.cdata
+            
+        elif stars=='m':
+            
+            data=self.mdata
+        
+        elif stars=='c+m' :
+        
+            data=self.mdata.append(self.cdata)
+            
+        else:
+            
+            data=self.data
+            
+        
+        
+        #axes, figure set, CMD plotted
+
+        plt.figure()        
+        plt.rc('axes',labelsize = 15)
+        plt.plot(data.hmag - data.kmag,data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
+        plt.gca().invert_yaxis()
+        plt.ylabel('$K_0$')
+        plt.xlabel('$H_0$-$K_0$')
     
     #graphing method for plotting h-k/j-h 2CD
     
