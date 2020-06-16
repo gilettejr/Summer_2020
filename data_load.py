@@ -36,8 +36,28 @@ class data_load:
     #path_to_file argument used to specify where WFCAM data is stored
     def __init__(self,galaxy, CLS=True, mag=True, ext=True, path_to_file='initial_data/'):
 
-
+        def linecut(frame,xdata,ydata,point1,point2):
         
+            upper=frame.copy()
+            lower=frame.copy()
+            
+            m=(point2[1]-point1[1])/(point2[0]-point1[0])
+            
+            c=point1[1]-point1[0] * m
+            
+            for i in frame.index:
+                
+                if ydata[i] > m * xdata[i] + c:
+                    
+                    lower.loc[i]=np.nan
+                    
+                else:
+                    
+                    upper.loc[i]=np.nan
+            
+            return([upper,lower])
+        
+        self.linecut=linecut
         #convert hhmmss ra and ddmmss dec into decimal values
         
         def make_deg_coord(frame):
@@ -242,7 +262,6 @@ class data_load:
         
         #columns assigned
         
-        print(frame)
         
         if self.galaxy=='ngc205' or self.galaxy=='m32':
             
@@ -267,13 +286,14 @@ class data_load:
             #cls cut carried out, NaN values purged
             CLS_cut(frame)
             frame=frame.dropna()
+            print(str(len(frame)) + ' sources retained after CLS cut')
         if mag==True:
             
             #mag cut carried out, NaN values purged
             mag_err_cut(frame)
             
             frame=frame.dropna()
-            
+            print(str(len(frame)) + ' sources retained after mag cut')
         if ext==True:
             
             #extinction corrections done
@@ -282,7 +302,12 @@ class data_load:
         #data set as class attribute
         
         self.data=frame
-    
+    #define line with two points, make a cut on left and right side
+    #point arguments given in tuples
+    #xdata, ydata lists of colour/magnitude data
+
+        
+        
     
     #remove bluer foreground data above a specified blue limit
     def forecut(self):
@@ -334,14 +359,64 @@ class data_load:
         k=len(data.copy())
         data=data.dropna()
         foredata=foredata.dropna()
-        decrease=100-(len(data)/k) * 100
+        decrease=((k-len(data))/k) * 100
         
         print('Foreground cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
         
         #set foreground dataframe as attribute so it can be accessed
         
         self.foredata=foredata
-
+        self.data=data
+        
+    def forecut_slant(self,slant_m='+'):
+        
+        #create copy to hold cut data for completeness
+        
+        foredata=self.data.copy()
+        
+        #set class attribute for frame holding data to variable for ease
+        
+        data=self.data
+        jk=data.jmag-data.kmag
+        k=data.kmag
+        
+        #set galaxy name list to variable for matching between cut and galaxy
+        
+        galaxies=self.galaxies
+        
+        #cuts for each galaxy placed in list. Defined from inspection of
+        #j-k CMD
+        
+        oneforecuts=[(0.95,17.9),(0.71,18.35),(0,0),(0,0)]
+        twoforecuts=[(0.99,17.0),(0,0),(0,0),(0,0)]
+        
+        #loop through galaxies to match galaxy with foreground cut
+        
+        for i in range(len(oneforecuts)):
+            
+            if self.galaxy==galaxies[i]:
+                cut1=oneforecuts[i]
+                cut2=twoforecuts[i]
+                break
+        
+        result=self.linecut(data,jk,k,cut1,cut2)
+        
+        if slant_m=='+':
+            foredata=result[1]
+            data=result[0]
+            
+        elif slant_m=='-':
+            foredata=result[0]
+            data=result[1]
+        else:
+            print('Gradient argument incorrect in forecut_slant method')
+            
+        
+        
+        #set foreground dataframe as attribute so it can be accessed
+        
+        self.foredata=foredata.dropna()
+        self.data=data.dropna()
 
     #method to cut all data below a certain defined magnitude
 
@@ -385,16 +460,19 @@ class data_load:
         #% decrease in sources from cuts printed, NaN values purged
                 
         k=len(data.copy())
+
         data=data.dropna()
+
         rgbdata=rgbdata.dropna()
         
-        decrease=100-(len(data)/k) * 100
+        decrease=((k-len(data))/k) * 100
         
         print('RGB cut reduced data by ' + str(int(decrease)) + '%, ' + str(len(data)) + ' sources retained')
         
         #set cut data as attribute for completeness
         
         self.rgbdata=rgbdata
+        self.data=data
     
     #separate AGB stars into C and M, using areas defined by boxes in 2D colour space
     #perpendicular to axes
@@ -409,8 +487,8 @@ class data_load:
         
         #define cuts in each colour space for each galaxy
         
-        hkcuts=[0.44,0.44,0.60,0.6]
-        jhcuts=[0.82,0.82,0.77,0.77]
+        hkcuts=[0.44,0.44,0.60,0.57]
+        jhcuts=[0.82,0.82,0.77,0.93]
         
         #match galaxy to cut
         
@@ -450,7 +528,57 @@ class data_load:
         
         self.mdata=mdata
         self.cdata=cdata
-    
+        
+    def CM_cut_slant(self,slant_m='-'):
+        
+        #create copy to hold cut data for completeness
+        
+        mdata=self.data.copy()
+        
+        #set class attribute for frame holding data to variable for ease
+        
+        cdata=self.data.copy()
+        data=self.data.copy()
+        jh=data.jmag-data.hmag
+        hk=data.hmag-data.kmag
+        
+        #set galaxy name list to variable for matching between cut and galaxy
+        
+        galaxies=self.galaxies
+        
+        #cuts for each galaxy placed in list. Defined from inspection of
+        #j-k CMD
+        
+        oneforecuts=[(1.09,0.13),(0,0),(0,0),(0,0)]
+        twoforecuts=[(0.78,0.48),(0,0),(0,0),(0,0)]
+        
+        #loop through galaxies to match galaxy with foreground cut
+        
+        for i in range(len(oneforecuts)):
+            
+            if self.galaxy==galaxies[i]:
+                cut1=oneforecuts[i]
+                cut2=twoforecuts[i]
+                break
+        
+        result=self.linecut(data,jh,hk,cut1,cut2)
+        
+        if slant_m=='+':
+            mdata=result[0]
+            cdata=result[1]
+            
+        elif slant_m=='-':
+            mdata=result[1]
+            cdata=result[0]
+        else:
+            print('Gradient argument incorrect in forecut_slant method')
+            
+        
+        
+        #set foreground dataframe as attribute so it can be accessed
+        
+        self.mdata=mdata.dropna()
+        self.cdata=cdata.dropna()
     #separate C and M stars based on defined triangle in 2D colour space
     
     def CM_polygon_cut(self):
@@ -463,9 +591,11 @@ class data_load:
         
         #define triangle holding C-stars for each galaxy
         
-        vertex1s=[(0,0),(0,0),(0,0),(0,0)]
-        vertex2s=[(0,0),(0,0),(0,0),(0,0)]
-        vertex3s=[(0,0),(0,0),(0,0),(0,0)]
+        vertex1s=[(0.75,0.53),(0,0),(0,0),(0,0)]
+        vertex2s=[(1.06,0.21),(0,0),(0,0),(0,0)]
+        vertex3s=[(2.25,1.31),(0,0),(0,0),(0,0)]
+        vertex4s=[(2.25,2.25),(0,0),(0,0),(0,0)]
+        vertex5s=[(1.65,2.25),(0,0),(0,0),(0,0)]
         
         
         #match galaxy to appropriate triangle
@@ -477,7 +607,9 @@ class data_load:
                 vertex1=vertex1s[i]
                 vertex2=vertex2s[i]
                 vertex3=vertex3s[i]
-                
+                vertex4=vertex4s[i]
+                vertex5=vertex5s[i]
+                    
                 break
         
         #colours defined
@@ -488,7 +620,7 @@ class data_load:
         
         #create triangle between 3 defined vertices surrounding C-stars
         
-        carea=Polygon([vertex1,vertex2,vertex3])
+        carea=Polygon([vertex1,vertex2,vertex3,vertex4,vertex5])
         
         #loop through data, allocate data inside triangle to cdata dataframe
         #remainder held in mdata dataframe
@@ -506,7 +638,7 @@ class data_load:
         #wipe NaN values, set data to class attributes
         
         mdata=mdata.dropna()
-        mdata=mdata.dropna()
+        cdata=cdata.dropna()
         
         self.mdata=mdata
         self.cdata=cdata

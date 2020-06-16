@@ -9,6 +9,28 @@ import matplotlib.pyplot as plt
 class data_read(data_load):
     
     def __init__(self,stage='cm',galaxy='ngc147'):
+        def linecut(frame,xdata,ydata,point1,point2):
+        
+            upper=frame.copy()
+            lower=frame.copy()
+            
+            m=(point2[1]-point1[1])/(point2[0]-point1[0])
+            
+            c=point1[1]-point1[0] * m
+            
+            for i in frame.index:
+                
+                if ydata[i] > m * xdata[i] + c:
+                    
+                    lower.loc[i]=np.nan
+                    
+                else:
+                    
+                    upper.loc[i]=np.nan
+            
+            return([upper,lower])
+        
+        self.linecut=linecut
         
         
         if stage=='agb':
@@ -42,4 +64,6 @@ class data_read(data_load):
         galaxies=['ngc147','ngc185','ngc205','m32']
         
         self.galaxies=galaxies
+        
+        
         

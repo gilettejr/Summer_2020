@@ -68,6 +68,34 @@ class data_readall:
         axs[1,0].set_title('NGC205')
         axs[1,1].set_title('M32')
         
+    def plot_spatials(self,marker='o',markersize=1,color='black',sharex=True,sharey=True):
+        
+        n147=self.n147.data
+        n185=self.n185.data
+        n205=self.n205.data
+        m32=self.m32.data
+        
+        fig,axs=plt.subplots(2,2)
+        axs[0,0].plot(n147.xi,n147.eta,linestyle='none',marker=marker,markersize=markersize,color='black')
+        axs[0,1].plot(n185.xi,n185.eta,linestyle='none',marker=marker,markersize=markersize,color='black')
+        axs[1,0].plot(n205.xi,n205.eta,linestyle='none',marker=marker,markersize=markersize,color='black')
+        axs[1,1].plot(m32.xi,m32.eta,linestyle='none',marker=marker,markersize=markersize,color='black')
+        
+        axs[0,0].invert_xaxis()
+        axs[0,1].invert_xaxis()
+        axs[1,0].invert_xaxis()
+        axs[1,1].invert_xaxis()
+        
+        axs[1,0].set_xlabel(r'$\xi$')
+        axs[1,1].set_xlabel(r'$\xi$')
+        axs[1,0].set_ylabel(r'$\eta$')
+        axs[0,0].set_ylabel(r'$\eta$')
+        axs[0,0].set_title('NGC147')
+        axs[0,1].set_title('NGC185')
+        axs[1,0].set_title('NGC205')
+        axs[1,1].set_title('M32')
+        
+        
         
         
         
