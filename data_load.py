@@ -34,7 +34,7 @@ class data_load:
     #reads in and performs initial cuts on data from chosen galaxy
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
-    def __init__(self,galaxy, CLS=True, mag=True, ext=True, path_to_file='initial_data/'):
+    def __init__(self,galaxy, CLS=True,CLS_mags='norm', mag=True, ext=True, path_to_file='initial_data/'):
 
         def linecut(frame,xdata,ydata,point1,point2):
         
@@ -143,21 +143,133 @@ class data_load:
                     
         #function to cut DataFrame based on cls index
         
-        def CLS_cut(frame):
+        def CLS_cut(frame,bands='norm'):
             
-            if self.galaxy=='m32':
-                for i in range(len(frame.jcis)):
+            if bands=='norm':
+            
+                if self.galaxy=='m32':
+                    for i in range(len(frame.jcis)):
+                    
+                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or frame.jmag[i]-frame.hmag[i] > 17:
+                            frame.loc[i]=np.nan
                 
-                    if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or frame.jmag[i]-frame.hmag[i] > 17:
-                        frame.loc[i]=np.nan
-            
+                else:
+                
+                #removes any non-stellar sources from data
+                    for i in range(len(frame.jcis)):
+                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
+                            frame.loc[i]=np.nan
+                            
+            elif bands=='jh' or bands=='hj':
+                
+                if self.galaxy=='m32':
+                    for i in range(len(frame.jcis)):
+                    
+                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0 and frame.hcis[i]!=-3.0):
+                            frame.loc[i]=np.nan
+                
+                else:
+                
+                #removes any non-stellar sources from data
+                    for i in range(len(frame.jcis)):
+                        if (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
+                            frame.loc[i]=np.nan      
+                            
+            elif bands=='hk':
+                
+                if self.galaxy=='m32':
+                    for i in range(len(frame.jcis)):
+                    
+                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0 and frame.hcis[i]!=-3.0):
+                            frame.loc[i]=np.nan
+                
+                else:
+                
+                #removes any non-stellar sources from data
+                    for i in range(len(frame.jcis)):
+                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0): 
+                            frame.loc[i]=np.nan
+                            
+            elif bands =='jk':
+                
+
+                
+                if self.galaxy=='m32':
+                    for i in range(len(frame.jcis)):
+                    
+                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0):
+                            frame.loc[i]=np.nan
+                
+                else:
+                
+                #removes any non-stellar sources from data
+                    for i in range(len(frame.jcis)):
+                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
+                            frame.loc[i]=np.nan
+                            
+            elif bands == 'j':
+                
+                if self.galaxy=='m32':
+                    for i in range(len(frame.jcis)):
+                    
+                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0):
+                            frame.loc[i]=np.nan
+                
+                else:
+                
+                #removes any non-stellar sources from data
+                    for i in range(len(frame.jcis)):
+                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
+                            frame.loc[i]=np.nan
+                            
+            elif bands == 'h':
+                
+                if self.galaxy=='m32':
+                    for i in range(len(frame.jcis)):
+                    
+                        if (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0 and frame.hcis[i]!=-3.0):
+                            frame.loc[i]=np.nan
+                
+                else:
+                
+                #removes any non-stellar sources from data
+                    for i in range(len(frame.jcis)):
+                        if (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0): 
+                            frame.loc[i]=np.nan
+                            
+            elif bands == 'k':
+                
+                if self.galaxy=='m32':
+                    for i in range(len(frame.jcis)):
+                    
+                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0):
+                            frame.loc[i]=np.nan
+                
+                else:
+                
+                #removes any non-stellar sources from data
+                    for i in range(len(frame.jcis)):
+                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0): 
+                            frame.loc[i]=np.nan
+                            
+            elif bands=='all':
+                
+                if self.galaxy=='m32':
+                    for i in range(len(frame.jcis)):
+                    
+                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0 and frame.hcis[i]!=-3.0):
+                            frame.loc[i]=np.nan
+                
+                else:
+                
+                #removes any non-stellar sources from data
+                    for i in range(len(frame.jcis)):
+                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
+                            frame.loc[i]=np.nan
+                            
             else:
-            
-            #removes any non-stellar sources from data
-                for i in range(len(frame.jcis)):
-                    if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
-                        frame.loc[i]=np.nan
-            
+                
+                print('Invalid CLS argument chosen, no CLS cut made')
             #percentage decrease of catalogue length calculated and printed
             
             k=len(frame.jcis)
@@ -296,7 +408,7 @@ class data_load:
             
             
             #cls cut carried out, NaN values purged
-            CLS_cut(frame)
+            CLS_cut(frame,bands=CLS_mags)
             frame=frame.dropna()
             print(str(len(frame)) + ' sources retained after CLS cut')
         if mag==True:
@@ -488,6 +600,10 @@ class data_load:
     
     #separate AGB stars into C and M, using areas defined by boxes in 2D colour space
     #perpendicular to axes
+    
+    
+    #select subset of stars, defined by corners of a square given in tuple format
+    def select_stars(self,corner1,corner2)
     
     def CM_cut(self):
         

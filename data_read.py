@@ -35,6 +35,9 @@ class data_read(data_load):
         
         if stage=='agb':
             path_to_folder='processed_data/agb_data/'
+            
+        elif stage=='cls_cut':
+            path_to_folder='processed_data/cls_cut_data/'
         
         elif stage=='fore_cut':
             path_to_folder='processed_data/fore_cut_data/'

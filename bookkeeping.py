@@ -6,12 +6,12 @@ from data_load import data_load
 #class to keep track of everything in intermediate data directories
 class bookkeeping:
     #performs extinction, cls and magerr cuts for each galaxy,
-    def __init__(self):
+    def __init__(self,CLS_mags):
         
-        self.n147=data_load('ngc147')
-        self.n185=data_load('ngc185')
-        self.n205=data_load('ngc205')
-        self.m32=data_load('m32')
+        self.n147=data_load('ngc147',CLS_mags=CLS_mags)
+        self.n185=data_load('ngc185',CLS_mags=CLS_mags)
+        self.n205=data_load('ngc205',CLS_mags=CLS_mags)
+        self.m32=data_load('m32',CLS_mags=CLS_mags)
         
     #update class runs through all the processing steps and saves all
     #intermediate data from the most up to date parameters
@@ -24,7 +24,7 @@ class bookkeeping:
         #carry out processing for each galaxy, saving to binary file after
         #each step
         for i in sets:
-            
+            i.save_to_parquet('processed_data/cls_cut_data/' + i.galaxy)
             i.forecut()
             i.save_to_parquet('processed_data/fore_cut_data/' + i.galaxy)
             i.trgbcut()

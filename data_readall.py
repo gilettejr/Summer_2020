@@ -16,7 +16,7 @@ class data_readall:
         self.n205=data_read(stage=stage,galaxy='ngc205')
         self.m32=data_read(stage=stage,galaxy='m32')
         
-    def plot_kj_cmds(self,marker=',',markersize=1,color='black'):
+    def plot_kj_cmds(self,marker='o',markersize=1,color='black'):
         
         n147=self.n147.data
         n185=self.n185.data
@@ -28,6 +28,9 @@ class data_readall:
         axs[0,1].plot(n185.jmag-n185.kmag,n185.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
         axs[1,0].plot(n205.jmag-n205.kmag,n205.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
         axs[1,1].plot(m32.jmag-m32.kmag,m32.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
+        
+        axs[0,0].set_ylim(11,20)
+        axs[0,0].set_xlim(-0.6,4.5)
         
         
         for i in range(2):
@@ -45,19 +48,21 @@ class data_readall:
         axs[1,0].set_title('NGC205')
         axs[1,1].set_title('M32')
         
-    def plot_ccs(self,marker=',',markersize=1,color='black'):
+    def plot_ccs(self,marker='o',markersize=1,color='black'):
         
         n147=self.n147.data
         n185=self.n185.data
         n205=self.n205.data
         m32=self.m32.data
         
-        fig,axs=plt.subplots(2,2)
+        fig,axs=plt.subplots(2,2,sharex=True,sharey=True)
         axs[0,0].plot(n147.jmag-n147.hmag,n147.hmag-n147.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
         axs[0,1].plot(n185.jmag-n185.hmag,n185.hmag-n185.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
         axs[1,0].plot(n205.jmag-n205.hmag,n205.hmag-n205.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
         axs[1,1].plot(m32.jmag-m32.hmag,m32.hmag-m32.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
         
+        axs[0,0].set_ylim(-0.6,3.3)
+        axs[0,0].set_xlim(-0.3,3.3)
 
         axs[1,0].set_xlabel('$J_0$-$H_0$')
         axs[1,1].set_xlabel('$J_0$-$H_0$')
