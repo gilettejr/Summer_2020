@@ -22,6 +22,10 @@ from scipy.signal import savgol_filter
 #libraries for seperating C and M with non horizontal/perpendicular lines
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
+
+#libraries for defining ellipses
+import shapely.affinity
+from descartes import PolygonPatch
 #class for processing starting from the raw WFCAM datasets
 # =============================================================================
 # __init__ carries out cls, magerr cuts and corrects for reddening, converts
@@ -555,7 +559,7 @@ class data_load:
         
         #cuts defined from running trgbtip on foreground removed data
         
-        trgbcuts=[18.13,17.84,17.94,16.9,17.8]
+        trgbcuts=[18.13,17.84,17.94,17.8,17.8]
         
         #galaxies attribute used to match galaxy to associated trgb cut
         
@@ -603,7 +607,72 @@ class data_load:
     
     
     #select subset of stars, defined by corners of a square given in tuple format
-    def select_stars(self,corner1,corner2)
+    def select_stars(self,corner1,corner3,graph='spatial'):
+        
+        data=self.data
+        
+        corner2=(corner3[0],corner1[1])
+        corner4=(corner1[0],corner3[1])
+        
+        select=Polygon([corner1,corner2,corner3,corner4])
+        
+        if graph=='spatial':
+            xdata=data.xi
+            ydata=data.eta
+            
+        elif graph=='kj_cmd':
+            
+            xdata=data.jmag-data.kmag
+            ydata=data.kmag
+            
+        elif graph =='cc':
+            
+            xdata=data.jmag-data.hmag
+            ydata=data.hmag-data.kmag
+            
+        else:
+            
+            print('Invalid graph format')
+            
+        
+        for i in data.index:
+            
+            if select.contains(Point(xdata[i],ydata[i]))==False:
+                
+                data.loc[i]=np.nan
+        
+        self.data=data.dropna()
+    
+    def select_ellipse(self,a,b,clockrot):
+        
+        data=self.data
+        
+        a=a*100
+        b=b*100
+        
+        # 1st elem = center point (x,y) coordinates
+        # 2nd elem = the two semi-axis values (along x, along y)
+        # 3rd elem = angle in degrees between x-axis of the Cartesian base
+        #            and the corresponding semi-axis
+        ellipse = ((0, 0),(a, b),clockrot)
+        
+        # Let create a circle of radius 1 around center point:
+        circ = shapely.geometry.Point(ellipse[0]).buffer(1)
+        
+        # Let create the ellipse along x and y:
+        ell  = shapely.affinity.scale(circ, int(ellipse[1][0]), int(ellipse[1][1]))
+        
+        # Let rotate the ellipse (clockwise, x axis pointing right):
+        ellr = shapely.affinity.rotate(ell,ellipse[2])
+        
+        for i in data.index:
+            
+            if ellr.contains(Point(data.xi[i]*100,data.eta[i]*100)) == False:
+                
+                data.loc[i]=np.nan
+            
+        self.data=data.dropna()
+                
     
     def CM_cut(self):
         
@@ -773,7 +842,7 @@ class data_load:
     
     #graphing method for plotting j-k cmds
     
-    def plot_kj_cmd(self,stars='all',marker='o',markersize=1,color='blue'):
+    def plot_kj_cmd(self,stars='all',marker='o',markersize=1,color='black'):
         
         #conditional statements plot only c,m, or both sets depending on 
         #optional stars argument
@@ -798,10 +867,11 @@ class data_load:
         
         #axes, figure set, CMD plotted
 
-        plt.figure()        
+        #plt.figure()        
         plt.rc('axes',labelsize = 15)
         plt.plot(data.jmag - data.kmag,data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
-        plt.gca().invert_yaxis()
+        if color!='red':
+            plt.gca().invert_yaxis()
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
         
@@ -830,16 +900,17 @@ class data_load:
         
         #axes, figure set, CMD plotted
 
-        plt.figure()        
+        #plt.figure()        
         plt.rc('axes',labelsize = 15)
         plt.plot(data.hmag - data.kmag,data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
-        plt.gca().invert_yaxis()
+        if color!='red':
+            plt.gca().invert_yaxis()
         plt.ylabel('$K_0$')
         plt.xlabel('$H_0$-$K_0$')
     
     #graphing method for plotting h-k/j-h 2CD
     
-    def plot_cc(self,stars='all',marker='o',markersize=1,color='black'):
+    def plot_cc(self,stars='all',marker='o',markersize=1,color='black',newfig=False):
         
         #stars argument works in same way as plot_kj_cmd
         
@@ -862,7 +933,9 @@ class data_load:
         
         #axes, figure set, data plotted
         
-        plt.figure()        
+        if newfig==True:
+        
+            plt.figure()        
         plt.rc('axes',labelsize = 15)
         plt.plot(data.jmag - data.hmag,data.hmag-data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
 
@@ -899,8 +972,11 @@ class data_load:
             plt.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color=color)
             plt.gca().set_ylabel(r'$\eta$')
             plt.gca().set_xlabel(r'$\xi$')
-            plt.gca().invert_xaxis()
-            plt.show()
+            
+            if color!='red':
+                plt.gca().invert_xaxis()
+                    
+                plt.show()
         
         
         #if c+m chosen for stars argument, plot c and m stars in subplots
@@ -995,8 +1071,60 @@ class data_load:
             
             kde = neighbors.KernelDensity(bandwidth = bandwidth, rtol = rtol, kernel = kernel)  # Inialise
             kde.fit(msamp[:, np.newaxis])        # Fit the Kernel Density model on the data. 
-            #kde.score_samples returns ln(pdf)   # Evaluate the density model on data - probablility density function
+            #kde.score_samples #returns ln(pdf)   # Evaluate the density model on data - probablility density function
             pdf = np.exp(kde.score_samples(mx[:, np.newaxis]))  #MX is x-axis range which the PDF is computed/plotted.
+            
+            plt.plot(mx,pdf)
+            
+            #----------------------------------------
+            # Set the Edge Detection part using a savgol_filter
+            
+            smooth_window = 31
+            poly_degree = 3
+            dpdf = savgol_filter(pdf, smooth_window, poly_degree, deriv = 1)
+            trgbloc[i] = mx[np.argmin(dpdf)]     # Most negative value corresponds to highest rate of decrease 
+            
+        trgbloc_mean = np.mean(trgbloc)  # Find the TRGB
+        trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
+        
+        return trgbloc_mean, trgbloc_sd
+    
+    def cmfind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov'):
+    # Set the data to find the TRGB
+        mk = self.data.jmag.dropna()-self.data.kmag.dropna()
+        dmk = np.sqrt(self.data.kerr.dropna()**2 + self.data.jerr.dropna()**2)
+        
+        mk=-mk
+        
+            
+        #Initialise stuff
+        niter = niter           # Number of itterations 
+        rtol = 1e-5             # Relative tolerance of the result
+        kernel = 'epanechnikov' # Parabolic kernel for the KDE
+        
+        mx = np.linspace(max(mk)*1.2, min(mk)*0.8, 1000)
+        trgbloc = np.zeros(niter)
+        
+        #----------------------------------------
+        #Generate NITER realisations of the Kernel Density Estimation
+        for i in range(niter):
+            msamp = np.random.normal(mk, dmk)     # Add Noise to data -> diff. each loop -> more reliable TRGB
+            
+            # Find an ideal binwidth for the luminosity function  
+            # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
+            
+            bandwidth_factor = 0.25
+            bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
+                
+            #----------------------------------------
+            # Implement the Kernel density estimation using a KD Tree for efficient queries 
+            
+            kde = neighbors.KernelDensity(bandwidth = bandwidth, rtol = rtol, kernel = kernel)  # Inialise
+            kde.fit(msamp[:, np.newaxis])        # Fit the Kernel Density model on the data. 
+            #kde.score_samples #returns ln(pdf)   # Evaluate the density model on data - probablility density function
+            pdf = np.exp(kde.score_samples(mx[:, np.newaxis]))  #MX is x-axis range which the PDF is computed/plotted.
+            
+            plt.plot(mx,pdf)
             
             #----------------------------------------
             # Set the Edge Detection part using a savgol_filter
@@ -1113,6 +1241,115 @@ class data_load:
         data.to_csv(fileloc)
         
         
+    def plot_isos(self,isofile,graph='kj_cmd',overlay=True):
+        
+        def apparent(M,dguess):
+            m = M + 5*np.log10(dguess/10)
+            return m
+        
+        def merr(dist,derr):
+            
+            m=5*np.log10(dist/10)-5*np.log10((dist-derr)/10)
+            
+            return m
+        def mag(a,b):
+            c=np.sqrt(a**2+b**2)
+            return c
+        
+        self.merr=merr
+        self.mag=mag
+        
+        dists=[(680000,30000),(630000,30000),(820000,30000),(785000,25000),(0,0)]
+        
+        for i in range(len(self.galaxies)):
+            
+            if self.galaxy==self.galaxies[i]:
+                
+                distance=dists[i][0]
+                disterr=dists[i][1]
+                
+                break
+        
+        names=['z','MH','age','Mini','int_IMF','mass','logL','logTe','logg','label','McoreTP','C_O','period0','period1','pmode','Mloss','tau1m','x','y','xc','xn','xo','cexcess','z_','bolmag','zmag','ymag','jmag','hmag','kmag']
+        
+        iso=ascii.read(isofile,names=names)
+        
+        iso=iso.to_pandas()
+        
+
+        
+        iso.jmag=apparent(iso.jmag,distance)
+        iso.hmag=apparent(iso.hmag,distance)
+        iso.kmag=apparent(iso.kmag,distance)
+        
+        print('Is this the long bit?')
+        
+        for i in iso.index:
+            
+            #label=8 is the AGB phase in padova isochrones
+            
+            if iso.label[i]!=8:
+
+                iso.loc[i]=np.nan
+        
+        #same method for seperating out the different isochrones in the set
+        #as in self.isoplot
+        
+        iso=iso.dropna()
+        iso=iso.reset_index(drop=True)
+        print(iso)
+        
+        if graph=='kj_cmd':
+            
+            xdata=iso.jmag-iso.kmag
+            ydata=iso.kmag
+            
+        elif graph=='cc':
+            
+            xdata=iso.jmag-iso.hmag
+            ydata=iso.hmag-iso.kmag
+            
+        else: 
+            
+            print('Invalid graph input in isochrone method')
+        
+        indices=[]
+        
+        for i in range(1,len(iso.age)):
+            if iso.age[i]!=iso.age[i-1] or iso.z[i]!=iso.z[i-1]:
+                indices.append(i)
+ 
+
+        
+        plt.plot(xdata[:indices[0]],ydata[:indices[0]],label='log(t) = ' + str(iso.age[0]) + ', Z = ' +str(iso.z[0]))
+        
+        for i in range(len(indices)):
+            if i==(len(indices)-1):
+                plt.plot(xdata[indices[i]:],ydata[indices[i]:],label='log(t) = ' + str(iso.age[indices[i]]) + ', Z = ' +str(iso.z[indices[i]]))
+                break
+            else:
+                plt.plot(xdata[indices[i]:indices[i+1]],ydata[indices[i]:indices[i+1]],label='log(t) = ' + str(iso.age[indices[i]]) + ', Z = ' +str(iso.z[indices[i]]))
+        
+        
+        if overlay==False:
+            
+            if graph=='kj_cmd':
+            
+                plt.gca().invert_yaxis()
+                plt.ylabel('$K_0$')
+                plt.xlabel('$J_0$-$K_0$')
+
+                
+            elif graph=='cc':
+                
+                plt.ylabel('$H_0$-$K_0$')
+                plt.xlabel('$J_0$-$H_0$')
+        
+        plt.legend()
+                
+                
+                
+                
         
         
         
