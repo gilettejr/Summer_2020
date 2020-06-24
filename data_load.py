@@ -1008,7 +1008,7 @@ class data_load:
         
         data=self.data
         
-        sns.kdeplot(data.xi,data.eta,levels=np.logspace(-1, 1., 10))
+        sns.kdeplot(data.xi,data.eta,levels=np.logspace(-0.5, 1., 10))
         
         
         
@@ -1100,8 +1100,8 @@ class data_load:
     
     def cmfind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov'):
     # Set the data to find the TRGB
-        mk = self.data.jmag.dropna()-self.data.kmag.dropna()
-        dmk = np.sqrt(self.data.kerr.dropna()**2 + self.data.jerr.dropna()**2)
+        mk = self.data.hmag.dropna()-self.data.kmag.dropna()
+        dmk = np.sqrt(self.data.kerr.dropna()**2 + self.data.herr.dropna()**2)
         
         mk=-mk
         
@@ -1355,6 +1355,10 @@ class data_load:
                 plt.xlabel('$J_0$-$H_0$')
         
         plt.legend()
+        
+    def plot_simlum(self,isofile):
+        
+        
         
     def plot_simpop(self,isofile,graph='kj_cmd',overlay=False,pop='single'):
                 
