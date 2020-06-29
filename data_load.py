@@ -846,7 +846,7 @@ class data_load:
     
     #graphing method for plotting j-k cmds
     
-    def plot_kj_cmd(self,stars='all',marker='o',markersize=1,color='black'):
+    def plot_kj_cmd(self,stars='all',marker='o',markersize=1,color='black',newfig=False):
         
         #conditional statements plot only c,m, or both sets depending on 
         #optional stars argument
@@ -870,8 +870,10 @@ class data_load:
         
         
         #axes, figure set, CMD plotted
-
-        #plt.figure()        
+        
+        if newfig==True: 
+        
+            plt.figure()        
         plt.rc('axes',labelsize = 15)
         plt.plot(data.jmag - data.kmag,data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
         if color!='red':
@@ -1055,152 +1057,7 @@ class data_load:
         plt.legend()
         plt.show()
     
-    def trgbfind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov'):
-    # Set the data to find the TRGB
-        mk = self.data.kmag.dropna()
-        dmk = self.data.kerr.dropna()
-            
-        #Initialise stuff
-        niter = niter           # Number of itterations 
-        rtol = 1e-5             # Relative tolerance of the result
-        kernel = 'epanechnikov' # Parabolic kernel for the KDE
-        
-        mx = np.linspace(max(mk)*1.2, min(mk)*0.8, 1000)
-        trgbloc = np.zeros(niter)
-        
-        #----------------------------------------
-        #Generate NITER realisations of the Kernel Density Estimation
-        for i in range(niter):
-            msamp = np.random.normal(mk, dmk)     # Add Noise to data -> diff. each loop -> more reliable TRGB
-            
-            # Find an ideal binwidth for the luminosity function  
-            # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
-            
-            bandwidth_factor = 0.25
-            bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
-                
-            #----------------------------------------
-            # Implement the Kernel density estimation using a KD Tree for efficient queries 
-            
-            kde = neighbors.KernelDensity(bandwidth = bandwidth, rtol = rtol, kernel = kernel)  # Inialise
-            kde.fit(msamp[:, np.newaxis])        # Fit the Kernel Density model on the data. 
-            #kde.score_samples #returns ln(pdf)   # Evaluate the density model on data - probablility density function
-            pdf = np.exp(kde.score_samples(mx[:, np.newaxis]))  #MX is x-axis range which the PDF is computed/plotted.
-            
-            plt.plot(mx,pdf)
-            
-            #----------------------------------------
-            # Set the Edge Detection part using a savgol_filter
-            
-            smooth_window = 31
-            poly_degree = 3
-            dpdf = savgol_filter(pdf, smooth_window, poly_degree, deriv = 1)
-            trgbloc[i] = mx[np.argmin(dpdf)]     # Most negative value corresponds to highest rate of decrease 
-            
-        trgbloc_mean = np.mean(trgbloc)  # Find the TRGB
-        trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
-        
-        return trgbloc_mean, trgbloc_sd
-    
-    def hkcmfind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov'):
-    # Set the data to find the TRGB
-        mk = self.data.hmag.dropna()-self.data.kmag.dropna()
-        dmk = np.sqrt(self.data.kerr.dropna()**2 + self.data.herr.dropna()**2)
-        
-        mk=-mk
-        
-            
-        #Initialise stuff
-        niter = niter           # Number of itterations 
-        rtol = 1e-5             # Relative tolerance of the result
-        kernel = 'epanechnikov' # Parabolic kernel for the KDE
-        
-        mx = np.linspace(max(mk)*1.2, min(mk)*0.8, 1000)
-        trgbloc = np.zeros(niter)
-        
-        #----------------------------------------
-        #Generate NITER realisations of the Kernel Density Estimation
-        for i in range(niter):
-            msamp = np.random.normal(mk, dmk)     # Add Noise to data -> diff. each loop -> more reliable TRGB
-            
-            # Find an ideal binwidth for the luminosity function  
-            # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
-            
-            bandwidth_factor = 0.25
-            bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
-                
-            #----------------------------------------
-            # Implement the Kernel density estimation using a KD Tree for efficient queries 
-            
-            kde = neighbors.KernelDensity(bandwidth = bandwidth, rtol = rtol, kernel = kernel)  # Inialise
-            kde.fit(msamp[:, np.newaxis])        # Fit the Kernel Density model on the data. 
-            #kde.score_samples #returns ln(pdf)   # Evaluate the density model on data - probablility density function
-            pdf = np.exp(kde.score_samples(mx[:, np.newaxis]))  #MX is x-axis range which the PDF is computed/plotted.
-            
-            plt.plot(mx,pdf)
-            
-            #----------------------------------------
-            # Set the Edge Detection part using a savgol_filter
-            
-            smooth_window = 31
-            poly_degree = 3
-            dpdf = savgol_filter(pdf, smooth_window, poly_degree, deriv = 1)
-            trgbloc[i] = mx[np.argmin(dpdf)]     # Most negative value corresponds to highest rate of decrease 
-            
-        trgbloc_mean = np.mean(trgbloc)  # Find the TRGB
-        trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
-        
-        return trgbloc_mean, trgbloc_sd
-    
-    def jhcmfind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov'):
-    # Set the data to find the TRGB
-        mk = self.data.jmag.dropna()-self.data.hmag.dropna()
-        dmk = np.sqrt(self.data.jerr.dropna()**2 + self.data.herr.dropna()**2)
-        
-        mk=-mk
-        
-            
-        #Initialise stuff
-        niter = niter           # Number of itterations 
-        rtol = 1e-5             # Relative tolerance of the result
-        kernel = 'epanechnikov' # Parabolic kernel for the KDE
-        
-        mx = np.linspace(max(mk)*1.2, min(mk)*0.8, 1000)
-        trgbloc = np.zeros(niter)
-        
-        #----------------------------------------
-        #Generate NITER realisations of the Kernel Density Estimation
-        for i in range(niter):
-            msamp = np.random.normal(mk, dmk)     # Add Noise to data -> diff. each loop -> more reliable TRGB
-            
-            # Find an ideal binwidth for the luminosity function  
-            # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
-            
-            bandwidth_factor = 0.25
-            bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
-                
-            #----------------------------------------
-            # Implement the Kernel density estimation using a KD Tree for efficient queries 
-            
-            kde = neighbors.KernelDensity(bandwidth = bandwidth, rtol = rtol, kernel = kernel)  # Inialise
-            kde.fit(msamp[:, np.newaxis])        # Fit the Kernel Density model on the data. 
-            #kde.score_samples #returns ln(pdf)   # Evaluate the density model on data - probablility density function
-            pdf = np.exp(kde.score_samples(mx[:, np.newaxis]))  #MX is x-axis range which the PDF is computed/plotted.
-            
-            plt.plot(mx,pdf)
-            
-            #----------------------------------------
-            # Set the Edge Detection part using a savgol_filter
-            
-            smooth_window = 31
-            poly_degree = 3
-            dpdf = savgol_filter(pdf, smooth_window, poly_degree, deriv = 1)
-            trgbloc[i] = mx[np.argmin(dpdf)]     # Most negative value corresponds to highest rate of decrease 
-            
-        trgbloc_mean = np.mean(trgbloc)  # Find the TRGB
-        trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
-        
-        return trgbloc_mean, trgbloc_sd
+
     
     #method to remove sources crossmatched with gaia, with well measured
     #parallaxes or proper motions
@@ -1410,9 +1267,90 @@ class data_load:
         
         plt.legend()
         
-    #def plot_simlum(self,isofile):
+    def plot_simlum(self,isofile,linestyle='solid',overlay=False,pop='multiple'):
+                
+        def apparent(M,dguess):
+            m = M + 5*np.log10(dguess/10)
+            return m
+        
+        def merr(dist,derr):
+            
+            m=5*np.log10(dist/10)-5*np.log10((dist-derr)/10)
+            
+            return m
+        def mag(a,b):
+            c=np.sqrt(a**2+b**2)
+            return c
+        
+        self.merr=merr
+        self.mag=mag
+        
+        dists=[(680000,30000),(630000,30000),(820000,30000),(785000,25000),(0,0)]
+        
+        for i in range(len(self.galaxies)):
+            
+            if self.galaxy==self.galaxies[i]:
+                
+                distance=dists[i][0]
+                disterr=dists[i][1]
+                
+                break
+        
+        names=['age','z','magbin','mbolmag','zmag','ymag','jmag','hmag','kmag']
+        
+        iso=ascii.read(isofile,names=names)
+        
+        iso=iso.to_pandas()
+        
+        print(iso.kmag)
+        
+        iso.magbin=apparent(iso.magbin,distance)
+        
+        print(iso.magbin)
+            #label=8 is the AGB phase in padova isochrones
+            
+
+        #same method for seperating out the different isochrones in the set
+        #as in self.isoplot
+        
+
+        
+        xdata=iso.magbin
+        ydata=iso.kmag
+        
+        indices=[]
+        
+        for i in range(1,len(iso.age)):
+            if iso.age[i]!=iso.age[i-1] or iso.z[i]!=iso.z[i-1]:
+                indices.append(i)
+ 
+        if pop!='single':
         
         
+            plt.plot(xdata[:indices[0]],ydata[:indices[0]],linestyle=linestyle,label='log(t) = ' + str(iso.age[0]) + ', Z = ' +str(iso.z[0]))
+            print(xdata[:indices[0]])
+            print(ydata[:indices[0]])
+            for i in range(len(indices)):
+                if i==(len(indices)-1):
+                    plt.plot(xdata[indices[i]:],ydata[indices[i]:],linestyle=linestyle,label='log(t) = ' + str(iso.age[indices[i]]) + ', Z = ' +str(iso.z[indices[i]]))
+                    break
+                else:
+                    plt.plot(xdata[indices[i]:indices[i+1]],ydata[indices[i]:indices[i+1]],linestyle=linestyle,label='log(t) = ' + str(iso.age[indices[i]]) + ', Z = ' +str(iso.z[indices[i]]))
+        
+        else:
+            
+            plt.plot(xdata,ydata,linestyle=linestyle,marker='o',markersize='1',label='log(t) = ' + str(iso.age[0]) + ', Z = ' + str(iso.z[0]))
+        
+        if overlay==False:
+            
+
+                plt.ylabel('N_stars')
+                plt.xlabel('$K_0$')
+                
+                plt.yscale('log')
+                
+        
+        plt.legend()            
         
     def plot_simpop(self,isofile,graph='kj_cmd',overlay=False,pop='single'):
                 
