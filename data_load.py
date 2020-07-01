@@ -39,7 +39,7 @@ class data_load:
     #reads in and performs initial cuts on data from chosen galaxy
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
-    def __init__(self,galaxy, CLS=True,CLS_mags='norm', mag=True, ext=True, path_to_file='initial_data/'):
+    def __init__(self,galaxy, CLS=True,CLS_mags='all', mag=True, ext=True, path_to_file='initial_data/'):
 
         def linecut(frame,xdata,ydata,point1,point2):
         
@@ -456,8 +456,8 @@ class data_load:
         #cuts for each galaxy placed in list. Defined from inspection of
         #j-k CMD
         
-        forecuts=[1.006,0.97,0.99,0.92,1.02]
-        
+        forecuts=[1.008,0.9669,0.9293,0.92,1.02]
+        foresigs=[0.105,0.081,0.087,0.1]
         #loop through galaxies to match galaxy with foreground cut
         
         for i in range(len(forecuts)):
@@ -560,7 +560,8 @@ class data_load:
         
         #cuts defined from running trgbtip on foreground removed data
         
-        trgbcuts=[18.13,17.84,17.94,17.8,17.8]
+        trgbcuts=[18.11800,17.8527,17.9407,17.8,17.8]
+        trgbsigs=[0.1342,0.057,0.06998]
         
         #galaxies attribute used to match galaxy to associated trgb cut
         
@@ -688,8 +689,10 @@ class data_load:
         #hkcuts=[0.44,0.44,0.60,0.57]
         #jhcuts=[0.82,0.82,0.77,0.93]
         
-        hkcuts=[0.346,0.340,0.41,0.477]
-        jhcuts=[0.891,0.870,0.93,0.913]
+        hkcuts=[0.3480,0.33867,0.4114,0.477]
+        hksigs=[0.03100,0.0428,0.10011,0]
+        jhcuts=[0.895,0.86900,0.934521,0.913,0]
+        jhsigs=[0.03341,0.038567,0.04685,0]
         
         #match galaxy to cut
         
@@ -1087,14 +1090,14 @@ class data_load:
         for i in range(len(cross.kmag)):
             
             
-            if cross.pmra/cross.pmraerr < 1 or cross.pmdec/cross.pmdecerr < 1:
+            if cross.pmra/cross.pmraerr < 0.33 or cross.pmdec/cross.pmdecerr < 0.33:
                 
                 cross.loc[i]=np.nan
                 
         for i in range(len(cross.kmag)):
             
             
-            if cross.parallax_over_error < 1:
+            if cross.parallax_over_error < 0.33:
                 
                 cross.loc[i]=np.nan
         
@@ -1108,11 +1111,11 @@ class data_load:
         for i in cross.orig_index:
             
             data[i]=np.nan
-        
+
         #NaN values wiped
         
         self.data=data.dropna()
-                
+
                 
         
         

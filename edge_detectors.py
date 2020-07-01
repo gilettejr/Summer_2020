@@ -161,7 +161,7 @@ class edge_detectors(data_read):
         
         return -trgbloc_mean, trgbloc_sd
     
-    def forefind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov',cut=17, up=False):
+    def forefind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov',cut=17.5, up=False):
     # Set the data to find the TRGB
     
         
