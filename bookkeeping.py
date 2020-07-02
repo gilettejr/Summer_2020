@@ -1,6 +1,6 @@
 from data_load import data_load
 from data_read import data_read
-
+from crossmatch_stilts import crossmatch
 
 
 #class to keep track of everything in intermediate data directories
@@ -46,17 +46,22 @@ class bookkeeping:
             i.CM_cut()
             i.cm_save_to_parquet('processed_data/m_agb_data/' + i.galaxy,'processed_data/c_agb_data/' + i.galaxy)
             
-    def prep_cross(self):
+    def cross(self):
         
         sets=self.read()
         
         for i in sets:
             i.save_to_csv('crossmatching/ukirt_pre/' + i.galaxy)
+            crossmatch(i.galaxy)
+            print(i.galaxy)
     
     def crossmatch_update(self):
         
-        for i in self.sets:
+        sets=self.read()
+        
+        for i in sets:
             i.gaia_remove('crossmatching/gaia/' + i.galaxy)
+            i.save_to_parquet('processed_data/agb_crossed_data/' + i.galaxy)
             
     
 
