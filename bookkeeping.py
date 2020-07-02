@@ -1,7 +1,9 @@
 from data_load import data_load
 from data_read import data_read
 from crossmatch_stilts import crossmatch
+from edge_detectors import edge_detectors
 
+import numpy as np
 
 #class to keep track of everything in intermediate data directories
 class bookkeeping:
@@ -27,6 +29,51 @@ class bookkeeping:
         self.load=load
         self.read=read
 
+        def edge(stage,galaxy,axis='none'):
+
+            
+            locs=[]
+            sigs=[]
+            
+
+                
+            
+            edge=edge_detectors(stage=stage,galaxy=galaxy)
+            
+            for i in range(3):
+                if stage=='cls_cut':
+                
+                    result=edge.forefind()
+                
+                elif stage=='fore_cut':
+                    
+                    result=edge.trgbfind()
+                    
+                elif stage=='agb_crossed' or stage=='agb':
+                    
+                    if axis=='hk':
+                    
+                        result=edge.hkcmfind()
+                        
+                    elif axis=='jh':
+                        
+                        result=edge.jhcmfind()
+                
+                locs.append(result[0])
+                sigs.append(locs[1])
+                
+            locs=np.array(locs)
+            sigs=np.array(sigs)
+            
+            loc=np.mean(locs)
+            sig=np.mean(sigs)
+            
+            loc=np.abs(loc)
+            
+            return [loc,sig]
+            
+        self.edge=edge
+
     #update class runs through all the processing steps and saves all
     #intermediate data from the most up to date parameters
     def update(self):
@@ -44,6 +91,23 @@ class bookkeeping:
             i.trgbcut()
             i.save_to_parquet('processed_data/agb_data/' + i.galaxy)
             i.CM_cut()
+            i.cm_save_to_parquet('processed_data/m_agb_data/' + i.galaxy,'processed_data/c_agb_data/' + i.galaxy)
+            
+    def edge_update(self):
+        
+        sets=self.load()
+        edge=self.edge()
+        for i in sets:
+            i.save_to_parquet('processed_data/cls_cut_data/' + i.galaxy)
+            forebord=edge(stage='cls_cut',galaxy=i.galaxy,axis='none')
+            i.forecut(cut=forebord[0])
+            i.save_to_parquet('processed_data/fore_cut_data/' + i.galaxy)
+            trgbord=edge(stage='fore_cut',galaxy=i.galaxy,axis='none')
+            i.trgbcut(cut=trgbord[0])
+            i.save_to_parquet('processed_data/agb_data/' + i.galaxy)
+            hkbord=edge(stage='agb_crossed',galaxy=i.galaxy,axis='hk')
+            jhbord=edge(stage='agb_crossed',galaxy=i.galaxy,axis='jh')
+            i.CM_cut(hkcut=hkbord[0],jhcut=jhbord[0])
             i.cm_save_to_parquet('processed_data/m_agb_data/' + i.galaxy,'processed_data/c_agb_data/' + i.galaxy)
             
     def cross(self):
