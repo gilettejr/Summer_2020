@@ -1071,33 +1071,34 @@ class data_load:
         
         data=self.data
         
+        
         #csv of crossmatched data produce by topcat read in to DataFrame
         
-        cross=pd.read_csv(path + self.galaxy)
+        cross=pd.read_csv(path)
         
         #remove data from foreground removal routine if Gaia noise measurement
         #is too high
         
-        for i in range(len(cross.kmag)):
+        for i in cross.index:
             
-            if cross.astrometric_excess_noise_sig > 2:
+            if cross.astrometric_excess_noise_sig[i] > 2:
                 
                 cross.loc[i]=np.nan
                 
         #produce list of indices of sources in original datasets with well measured
         #parallaxes or proper motions
         
-        for i in range(len(cross.kmag)):
+        for i in cross.index:
             
             
-            if cross.pmra/cross.pmraerr < 0.33 or cross.pmdec/cross.pmdecerr < 0.33:
+            if cross.pmra[i]/cross.pmra_error[i] < 0.33 or cross.pmdec[i]/cross.pmdec_error[i] < 0.33:
                 
                 cross.loc[i]=np.nan
                 
-        for i in range(len(cross.kmag)):
+        for i in cross.index:
             
             
-            if cross.parallax_over_error < 0.33:
+            if cross.parallax_over_error[i] < 0.33:
                 
                 cross.loc[i]=np.nan
         
@@ -1110,13 +1111,13 @@ class data_load:
         
         for i in cross.orig_index:
             
-            data[i]=np.nan
+            data.loc[i]=np.nan
 
         #NaN values wiped
         
         self.data=data.dropna()
 
-                
+        #print(self.data)
         
         
     #produce C/M ratio and [Fe/H] values from mdata and cdata        
