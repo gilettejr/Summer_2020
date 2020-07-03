@@ -341,8 +341,7 @@ class data_load:
             frame.kmag=frame.kmag - kext
             
             print('UKIRT extinction corrections done')
-            
-
+     
 
 
         #with initial functions defined, we now need to convert the ASCII WFCAM data into a dataframe
@@ -439,7 +438,7 @@ class data_load:
         
     
     #remove bluer foreground data above a specified blue limit
-    def forecut(self):
+    def forecut(self,cut=0):
         
         #create copy to hold cut data for completeness
         
@@ -460,11 +459,18 @@ class data_load:
         foresigs=[0.105,0.081,0.087,0.1]
         #loop through galaxies to match galaxy with foreground cut
         
-        for i in range(len(forecuts)):
+        if cut==0:
             
-            if self.galaxy==galaxies[i]:
-                cut=forecuts[i]
-                break
+        
+            for i in range(len(forecuts)):
+                
+                if self.galaxy==galaxies[i]:
+                    cut=forecuts[i]
+                    break
+            
+        else:
+            
+            cut=cut
         
         #j-k colour defined for data
         
@@ -549,7 +555,7 @@ class data_load:
 
     #method to cut all data below a certain defined magnitude
 
-    def trgbcut(self):
+    def trgbcut(self,cut=0):
         
         #similar process as in forecut
         #set attributes to variables, for holding data with rgb stars removed
@@ -560,20 +566,29 @@ class data_load:
         
         #cuts defined from running trgbtip on foreground removed data
         
+
+        
         trgbcuts=[18.11800,17.8527,17.9407,17.8,17.8]
         trgbsigs=[0.1342,0.057,0.06998]
+            
+ 
+
         
         #galaxies attribute used to match galaxy to associated trgb cut
         
         galaxies=self.galaxies
         
-        for i in range(len(galaxies)):
-            
-            if self.galaxy==galaxies[i]:
+        if cut==0:        
+            for i in range(len(galaxies)):
                 
-                cut=trgbcuts[i]
-                break
-        
+                if self.galaxy==galaxies[i]:
+                    
+                    cut=trgbcuts[i]
+                    break
+                
+        else:
+            
+            cut=cut        
         #make cut on main data attribute, convert rgbdata to frame holding only
         #cut data (rgb stars)        
         
@@ -676,7 +691,7 @@ class data_load:
         self.data=data.dropna()
                 
     
-    def CM_cut(self):
+    def CM_cut(self,hkcut=0,jhcut=0):
         
         #variables set
         
@@ -696,14 +711,21 @@ class data_load:
         
         #match galaxy to cut
         
-        for i in range(len(self.galaxies)):
+        if hkcut == 0 or jhcut == 0:
+        
+            for i in range(len(self.galaxies)):
+                
+                if self.galaxies[i]==self.galaxy:
+                    
+                    hkcut=hkcuts[i]
+                    jhcut=jhcuts[i]
+                    
+                    break
+                
+        else:
             
-            if self.galaxies[i]==self.galaxy:
-                
-                hkcut=hkcuts[i]
-                jhcut=jhcuts[i]
-                
-                break
+            hkcut=hkcut
+            jhcut=jhcut
             
             
         
@@ -1091,16 +1113,10 @@ class data_load:
         for i in cross.index:
             
             
-            if cross.pmra[i]/cross.pmra_error[i] < 0.33 or cross.pmdec[i]/cross.pmdec_error[i] < 0.33:
+            if np.abs(cross.pmra[i]/cross.pmra_error[i]) < 0.33 and np.abs(cross.pmdec[i]/cross.pmdec_error[i]) < 0.33:
                 
                 cross.loc[i]=np.nan
                 
-        for i in cross.index:
-            
-            
-            if cross.parallax_over_error[i] < 0.33:
-                
-                cross.loc[i]=np.nan
         
         #wipe NaN values from index list
         
@@ -1108,6 +1124,7 @@ class data_load:
         
         #remove sources with matching indices to cross list
         #to remove foreground data
+        
         
         for i in cross.orig_index:
             

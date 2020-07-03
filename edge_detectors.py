@@ -35,7 +35,7 @@ class edge_detectors(data_read):
             # Find an ideal binwidth for the luminosity function  
             # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
             
-            bandwidth_factor = 0.25
+            bandwidth_factor = 0.1
             bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
                 
             #----------------------------------------
@@ -59,7 +59,7 @@ class edge_detectors(data_read):
         trgbloc_mean = np.mean(trgbloc)  # Find the TRGB
         trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
         
-        return trgbloc_mean, trgbloc_sd
+        return [trgbloc_mean, trgbloc_sd]
     
     def hkcmfind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov'):
     # Set the data to find the TRGB
@@ -85,7 +85,7 @@ class edge_detectors(data_read):
             # Find an ideal binwidth for the luminosity function  
             # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
             
-            bandwidth_factor = 0.25
+            bandwidth_factor = 0.1
             bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
                 
             #----------------------------------------
@@ -109,7 +109,7 @@ class edge_detectors(data_read):
         trgbloc_mean = np.mean(trgbloc)  # Find the TRGB
         trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
         
-        return trgbloc_mean, trgbloc_sd
+        return [trgbloc_mean, trgbloc_sd]
     
     def jhcmfind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov'):
     # Set the data to find the TRGB
@@ -135,7 +135,7 @@ class edge_detectors(data_read):
             # Find an ideal binwidth for the luminosity function  
             # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
             
-            bandwidth_factor = 0.25
+            bandwidth_factor = 0.1
             bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
                 
             #----------------------------------------
@@ -159,11 +159,13 @@ class edge_detectors(data_read):
         trgbloc_mean = np.mean(trgbloc)  # Find the TRGB
         trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
         
-        return -trgbloc_mean, trgbloc_sd
+        return [-trgbloc_mean, trgbloc_sd]
     
     def forefind(self, magname = 'Kmag', dmagname = 'eKmag', niter = 1000, kernel = 'epanechnikov',cut=17.5, up=False):
     # Set the data to find the TRGB
-    
+        if self.galaxy=='ngc205' or self.galaxy=='m32':
+            
+            cut=17
         
         for i in self.data.index:
             
@@ -174,8 +176,9 @@ class edge_detectors(data_read):
         mk = self.data.jmag.dropna()-self.data.kmag.dropna()
         dmk = np.sqrt(self.data.jerr.dropna()**2 + self.data.kerr.dropna()**2)
         
-        if up==False:
+        if self.galaxy!='ngc205' and self.galaxy!='m32':
         
+
             mk=-mk
         
             
@@ -195,7 +198,7 @@ class edge_detectors(data_read):
             # Find an ideal binwidth for the luminosity function  
             # PS: Monte Carlo already smooths the distribution, so reduce the ideal binwidth a bit.
             
-            bandwidth_factor = 0.25
+            bandwidth_factor = 0.1
             bandwidth = bandwidth_factor*(np.std(msamp)*(len(msamp)**(-0.2)))
                 
             #----------------------------------------
@@ -219,7 +222,7 @@ class edge_detectors(data_read):
         trgbloc_mean = -np.mean(trgbloc)  # Find the TRGB
         trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
         
-        return trgbloc_mean, trgbloc_sd
+        return [trgbloc_mean, trgbloc_sd]
 
     
     
