@@ -40,6 +40,14 @@ class data_load:
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
     def __init__(self,galaxy, CLS=True,CLS_mags='all', mag=True, ext=True, path_to_file='initial_data/'):
+        
+        def CM_to_FEH(CM):
+        
+            FEH=-1.39 -0.47*np.log10(CM)
+        
+            return(FEH)
+            
+        self.CM_to_FEH=CM_to_FEH
 
         def linecut(frame,xdata,ydata,point1,point2):
         
@@ -455,8 +463,8 @@ class data_load:
         #cuts for each galaxy placed in list. Defined from inspection of
         #j-k CMD
         
-        forecuts=[1.008,0.9669,0.9293,0.92,1.02]
-        foresigs=[0.105,0.081,0.087,0.1]
+        forecuts=[0.992,0.964,1.00,0.92,1.002]
+        foresigs=[0.103,0.079,0.085,0.01]
         #loop through galaxies to match galaxy with foreground cut
         
         if cut==0:
@@ -568,8 +576,8 @@ class data_load:
         
 
         
-        trgbcuts=[18.11800,17.8527,17.9407,17.8,17.8]
-        trgbsigs=[0.1342,0.057,0.06998]
+        trgbcuts=[18.137,17.862,17.930,17.8,17.8]
+        trgbsigs=[0.141,0.110,0.066,0.67]
             
  
 
@@ -623,72 +631,7 @@ class data_load:
     #perpendicular to axes
     
     
-    #select subset of stars, defined by corners of a square given in tuple format
-    def select_stars(self,corner1,corner3,graph='spatial'):
-        
-        data=self.data
-        
-        corner2=(corner3[0],corner1[1])
-        corner4=(corner1[0],corner3[1])
-        
-        select=Polygon([corner1,corner2,corner3,corner4])
-        
-        if graph=='spatial':
-            xdata=data.xi
-            ydata=data.eta
-            
-        elif graph=='kj_cmd':
-            
-            xdata=data.jmag-data.kmag
-            ydata=data.kmag
-            
-        elif graph =='cc':
-            
-            xdata=data.jmag-data.hmag
-            ydata=data.hmag-data.kmag
-            
-        else:
-            
-            print('Invalid graph format')
-            
-        
-        for i in data.index:
-            
-            if select.contains(Point(xdata[i],ydata[i]))==False:
-                
-                data.loc[i]=np.nan
-        
-        self.data=data.dropna()
-    
-    def select_ellipse(self,a,b,clockrot):
-        
-        data=self.data
-        
-        a=a*100
-        b=b*100
-        
-        # 1st elem = center point (x,y) coordinates
-        # 2nd elem = the two semi-axis values (along x, along y)
-        # 3rd elem = angle in degrees between x-axis of the Cartesian base
-        #            and the corresponding semi-axis
-        ellipse = ((0, 0),(a, b),clockrot)
-        
-        # Let create a circle of radius 1 around center point:
-        circ = shapely.geometry.Point(ellipse[0]).buffer(1)
-        
-        # Let create the ellipse along x and y:
-        ell  = shapely.affinity.scale(circ, int(ellipse[1][0]), int(ellipse[1][1]))
-        
-        # Let rotate the ellipse (clockwise, x axis pointing right):
-        ellr = shapely.affinity.rotate(ell,ellipse[2])
-        
-        for i in data.index:
-            
-            if ellr.contains(Point(data.xi[i]*100,data.eta[i]*100)) == False:
-                
-                data.loc[i]=np.nan
-            
-        self.data=data.dropna()
+
                 
     
     def CM_cut(self,hkcut=0,jhcut=0):
@@ -704,10 +647,10 @@ class data_load:
         #hkcuts=[0.44,0.44,0.60,0.57]
         #jhcuts=[0.82,0.82,0.77,0.93]
         
-        hkcuts=[0.3480,0.33867,0.4114,0.477]
-        hksigs=[0.03100,0.0428,0.10011,0]
-        jhcuts=[0.895,0.86900,0.934521,0.913,0]
-        jhsigs=[0.03341,0.038567,0.04685,0]
+        hkcuts=[0.337,0.323,0.407,0.477]
+        hksigs=[0.047,0.052,0.034,0]
+        jhcuts=[0.883,0.857,0.930,0.913,0.91]
+        jhsigs=[0.046,0.042,0.049,0]
         
         #match galaxy to cut
         
@@ -1142,18 +1085,25 @@ class data_load:
     def FEH_find(self):
         
         #function performs conversion between CM and [Fe/H] from Cioni(2009)
-        def CM_to_FEH(CM):
-        
-            FEH=-1.39 -0.47*np.log10(CM)
-        
-            return(FEH)
         #define c/m ratio
         CM=len(self.cdata)/len(self.mdata)
         
         #carry out conversion
-        FEH=CM_to_FEH(CM)
+        FEH=self.CM_to_FEH(CM)
         #print out result
         print('C/M = ' + str(CM) + ' [Fe/H] = ' + str(FEH))
+        
+    def FEH_slices(self,a_width,outer_rad):
+        
+        eccentricities=[0,0,0,0]
+        rotations=[0,0,0,0]
+        
+        #make ellipses
+        
+        #cut redundant points
+        
+        #calculate C/M, FEH
+        
             
             
         #method to save data as binary parquet file, to be used by data_read class    
