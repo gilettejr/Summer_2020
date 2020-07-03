@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from graphing_utils import graphing_utils
+from selection_utils import selection_utils
 
 #imports for manipulating astronomical data
 from astropy.coordinates import SkyCoord
@@ -1093,10 +1094,69 @@ class data_load:
         #print out result
         print('C/M = ' + str(CM) + ' [Fe/H] = ' + str(FEH))
         
-    def FEH_slices(self,a_width,outer_rad):
+    def FEH_slices(self,a_width=0.05,outer_rad=0.3):
         
-        eccentricities=[0,0,0,0]
-        rotations=[0,0,0,0]
+        cdata=self.cdata
+        mdata=self.mdata
+        data=self.data
+        eccentricities=[0.891169,0,0,0]
+        rotations=[60,0,0,0]
+        atup=(0.075,0.089)
+        btup=(0.032,-0.042)
+        check=selection_utils()
+        slices=[]
+        for i in range(int(outer_rad/a_width)):
+        
+            slices.append(check.select_ellipse(self.data,afl=outer_rad-(a_width * i),eccentricity=eccentricities[0],clockrot=rotations[0]))
+            
+        for i in range(len(slices)-1):
+            
+            for j in slices[i].index:
+                for k in slices[i+1].index:
+                    if j==k:
+                        slices[i].loc[j]=np.nan
+                        break
+                        
+            slices[i]=slices[i].dropna()
+            
+
+        mslices=slices
+        cslices=slices
+        for i in range(len(slices)):
+            for j in slices[i].index:
+                for k in mdata.index:
+                    if j==k:
+                        cslices[i].loc[j]=np.nan
+                        break
+                    
+                for k in cdata.index:
+                    
+                    if j==k:
+                        mslices[i].loc[j]=np.nan
+                        break
+            
+            mslices[i]=mslices[i].dropna()
+            cslices[i]=cslices[i].dropna()
+        mnum=[]
+        cnum=[]            
+        
+        for i in range(len(slices)):
+            mnum.append(len(mslices[i].index))
+            cnum.append(len(cslices[i].index))
+            
+        mnum=np.array(mnum)
+        cnum=cnum.array(cnum)
+        
+        cm=cnum/mnum
+        
+        FEH= self.CM_to_FEH(cm)
+        
+        print(FEH)
+
+        
+             
+        
+        
         
         #make ellipses
         
