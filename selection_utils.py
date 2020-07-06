@@ -6,16 +6,27 @@ from shapely.geometry.polygon import Polygon
 
 #libraries for defining ellipses
 import shapely.affinity
-from descartes import PolygonPatch
+#from descartes import PolygonPatch
 
 class selection_utils:
     
-    def select_ellipse(self,data,a,b,eccentricity=0,clockrot):
+    def select_ellipse(self,data,afl=False,atup=False,btup=False,eccentricity=0,clockrot=0):
+        newdata=data.copy()
+        if afl==False:
+            a=np.sqrt(atup[0]**2 + atup[1]**2)
+            
+        else:
+            a=afl*1000
         
-
-        
-        a=a*100
-        b=b*100
+        if eccentricity==False:
+            b=np.sqrt(btup[0]**2 + btup[1]**2)
+            b=b*1000
+            eccentricity=np.sqrt(1-(b/a)**2)
+            print('Eccentricity= ' + str(eccentricity))
+            
+        elif btup==False:
+            
+            b=a * np.sqrt(1-eccentricity**2)
         
         # 1st elem = center point (x,y) coordinates
         # 2nd elem = the two semi-axis values (along x, along y)
@@ -32,13 +43,13 @@ class selection_utils:
         # Let rotate the ellipse (clockwise, x axis pointing right):
         ellr = shapely.affinity.rotate(ell,ellipse[2])
         
-        for i in data.index:
+        for i in newdata.index:
             
-            if ellr.contains(Point(data.xi[i]*100,data.eta[i]*100)) == False:
+            if ellr.contains(Point(newdata.xi[i]*1000,newdata.eta[i]*1000)) == False:
                 
-                data.loc[i]=np.nan
+                newdata.loc[i]=np.nan
             
-        return data.dropna()
+        return newdata
     
     #select subset of stars, defined by corners of a square given in tuple format
     def select_stars(self,data,corner1,corner3,graph='spatial'):
