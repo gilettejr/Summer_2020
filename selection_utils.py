@@ -11,6 +11,7 @@ import shapely.affinity
 class selection_utils:
     
     def select_ellipse(self,data,afl=False,atup=False,btup=False,eccentricity=0,clockrot=0):
+        newdata=data.copy()
         if afl==False:
             a=np.sqrt(atup[0]**2 + atup[1]**2)
             
@@ -42,13 +43,13 @@ class selection_utils:
         # Let rotate the ellipse (clockwise, x axis pointing right):
         ellr = shapely.affinity.rotate(ell,ellipse[2])
         
-        for i in data.index:
+        for i in newdata.index:
             
-            if ellr.contains(Point(data.xi[i]*1000,data.eta[i]*1000)) == False:
+            if ellr.contains(Point(newdata.xi[i]*1000,newdata.eta[i]*1000)) == False:
                 
-                data.loc[i]=np.nan
+                newdata.loc[i]=np.nan
             
-        return data.dropna()
+        return newdata
     
     #select subset of stars, defined by corners of a square given in tuple format
     def select_stars(self,data,corner1,corner3,graph='spatial'):

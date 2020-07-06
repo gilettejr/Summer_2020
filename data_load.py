@@ -661,8 +661,8 @@ class data_load:
                 
                 if self.galaxies[i]==self.galaxy:
                     
-                    hkcut=hkcuts[i]
-                    jhcut=jhcuts[i]
+                    hkcut=hkcuts[i]+hksigs[i]
+                    jhcut=jhcuts[i]+jhsigs[i]
                     
                     break
                 
@@ -693,8 +693,8 @@ class data_load:
         
         #wipe NaN values
         
-        mdata=mdata.dropna()
-        cdata=cdata.dropna()
+        #mdata=mdata.dropna()
+        #cdata=cdata.dropna()
         
         self.mdata=mdata
         self.cdata=cdata
@@ -1087,71 +1087,116 @@ class data_load:
         
         #function performs conversion between CM and [Fe/H] from Cioni(2009)
         #define c/m ratio
-        CM=len(self.cdata)/len(self.mdata)
+        CM=len(self.cdata.dropna())/len(self.mdata.dropna())
         
         #carry out conversion
         FEH=self.CM_to_FEH(CM)
         #print out result
         print('C/M = ' + str(CM) + ' [Fe/H] = ' + str(FEH))
         
-    def FEH_slices(self,a_width=0.05,outer_rad=0.3):
+    def FEH_slices(self,a_width=0.03,outer_rad=0.3):
         
         cdata=self.cdata
         mdata=self.mdata
         data=self.data
-        eccentricities=[0.891169,0,0,0]
-        rotations=[60,0,0,0]
+        eccentricities=[0.44,0,0,0]
+        rotations=[56,0,0,0]
         atup=(0.075,0.089)
         btup=(0.032,-0.042)
         check=selection_utils()
         slices=[]
-        for i in range(int(outer_rad/a_width)):
+        for i in range(int((outer_rad*1000)/(a_width*1000))):
         
             slices.append(check.select_ellipse(self.data,afl=outer_rad-(a_width * i),eccentricity=eccentricities[0],clockrot=rotations[0]))
-            
+        
+        
+
         for i in range(len(slices)-1):
-            
-            for j in slices[i].index:
-                for k in slices[i+1].index:
-                    if j==k:
-                        slices[i].loc[j]=np.nan
-                        break
+            locs=np.where(slices[i].orig_index==slices[i+1].orig_index)
+
+            locs=locs[0]
+            indices=[]
+            for j in locs:
+                indices.append(slices[i].index[j])
+
+            for k in indices:
+                slices[i].loc[k]=np.nan
+                
+
                         
-            slices[i]=slices[i].dropna()
+            #slices[i]=slices[i].dropna()
+            
             
 
-        mslices=slices
-        cslices=slices
-        for i in range(len(slices)):
-            for j in slices[i].index:
-                for k in mdata.index:
-                    if j==k:
-                        cslices[i].loc[j]=np.nan
-                        break
-                    
-                for k in cdata.index:
-                    
-                    if j==k:
-                        mslices[i].loc[j]=np.nan
-                        break
+
+
+        mslices=[]
+        cslices=[]
+        
+        for i in slices:
             
+            mslices.append(i.copy())
+            cslices.append(i.copy())
+        
+
+        
+        for i in range(len(slices)):
+            
+            clocs=np.where(mslices[i].orig_index==mdata.orig_index)
+            mlocs=np.where(cslices[i].orig_index==cdata.orig_index)
+            
+
+            
+            mindices=[]
+            cindices=[]
+            
+            for j in mlocs:
+                
+                mindices.append(cslices[i].index[j])
+            
+            for j in clocs:
+                
+                cindices.append(mslices[i].index[j])
+                
+
+                
+            for k in mindices:
+                
+                mslices[i].loc[k]=np.nan
+
+
+            for k in cindices:
+                
+                cslices[i].loc[k]=np.nan
+
+
             mslices[i]=mslices[i].dropna()
             cslices[i]=cslices[i].dropna()
+            
+
+            
         mnum=[]
         cnum=[]            
         
         for i in range(len(slices)):
-            mnum.append(len(mslices[i].index))
-            cnum.append(len(cslices[i].index))
+            mnum.append(len(mslices[i]))
+            cnum.append(len(cslices[i]))
             
         mnum=np.array(mnum)
-        cnum=cnum.array(cnum)
+        cnum=np.array(cnum)
+        
         
         cm=cnum/mnum
         
         FEH= self.CM_to_FEH(cm)
         
-        print(FEH)
+        xdata=np.linspace(outer_rad,0,num=(outer_rad*1000)/(a_width*1000))
+        plt.plot(xdata,FEH,linestyle='none',marker='o',markersize='3',color='black')
+        m,b=np.polyfit(xdata,FEH,1)
+        plt.plot(xdata, m*xdata + b,color='red')
+        plt.xlabel('a/deg')
+        plt.ylabel('[Fe/H]')
+
 
         
              
