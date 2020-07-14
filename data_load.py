@@ -103,12 +103,12 @@ class data_load:
             frame['RA']=coords[0]
             
             frame['DEC']=coords[1]
-            
+        #creates standard coordinates from ra and dec inputs. dE and dSph coordinates are hard coded here    
         def make_tan_coord(frame,galaxy):
-            
+                #intermediate function to do the heavy lifting
                 def create_tangent_coords(frame,tangentra,tangentdec):
         
-        #ra and dec attributes converted to variables in radians
+                    #ra and dec attributes converted to variables in radians
         
                     ra = np.radians(frame.RA)
                     dec = np.radians(frame.DEC)
@@ -132,7 +132,7 @@ class data_load:
                     eta = eta * (180/np.pi)
                     
                     return (np.array([xi,eta]))
-                
+                #ra and dec positions in decimal degrees for each galaxy
                 if galaxy=='ngc147':
                     tra=8.300500
                     tdec=48.50850
@@ -203,31 +203,35 @@ class data_load:
                 elif galaxy=='and20':
                     tra=1.8779166700000003
                     tdec=35.13233333
-                
+                #function run dependent on galaxy
                 coords=create_tangent_coords(frame,tra,tdec)
-                
+                #output produced and xi and eta columns added to dataframe
                 frame['xi']=coords[0]
                 frame['eta']=coords[1]
                     
         #function to cut DataFrame based on cls index
         
         def CLS_cut(frame,bands='norm'):
-            
+            #set of cuts used for normal data processing
             if bands=='norm':
-            
+                #m32 treated differently to prevent gradient issues in spatial distribution
                 if self.galaxy=='m32':
                     for i in range(len(frame.jcis)):
-                    
+                        #standard cls cuts made for the rest
                         if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.hcis[i]==-8.0) or frame.jmag[i]-frame.hmag[i] > 17:
                             frame.loc[i]=np.nan
                 
                 else:
                 
-                #removes any non-stellar sources from data
+
+                #standard cls cuts made for the rest
                     for i in range(len(frame.jcis)):
                         if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
                             frame.loc[i]=np.nan
-                            
+            #different combinations of cls cuts included below
+            #can be used to test effect of different cls cuts
+
+                
             elif bands=='jh' or bands=='hj':
                 
                 if self.galaxy=='m32':
@@ -336,7 +340,7 @@ class data_load:
                             frame.loc[i]=np.nan
                             
             else:
-                
+                #failure if invalid cls argument chosen upon class initialisation
                 print('Invalid CLS argument chosen, no CLS cut made')
             #percentage decrease of catalogue length calculated and printed
             
@@ -349,7 +353,8 @@ class data_load:
             #for some reason if I put frame=frame.dropna() here it doesn't do anything, so I have to wipe the NaNs outside the function
             
             
-        #cuts DataFrame with large magnitude error
+        #function to cut data with large magnitude error
+        #takes dataframe as input, only used internally in this class
         
         def mag_err_cut(frame,magerr=0.2):
             
@@ -370,7 +375,7 @@ class data_load:
             print('Magerr cut reduced data by ' + str(int(decrease)) + '%')
             
         #applies extinction correction to data in DataFrame format    
-        
+        #again used in the class only
         def ext_corr(frame):
             
 
@@ -407,6 +412,10 @@ class data_load:
      
 
 
+
+
+
+
         #with initial functions defined, we now need to convert the ASCII WFCAM data into a dataframe
         
         #column headers of WFCAM data defined
@@ -420,10 +429,12 @@ class data_load:
         
         #names of datafiles
         
+        #galaxy list and galaxy name set as attributes
+        #used for matching correct parameters for appropriate
+        #galaxy when running class methods
         self.galaxies=galaxies
         self.galaxy=galaxy
         
-        infilenames=['lot_n147.unique','lot_n185.unique','N205_new_trimmed.unique','M32_new.asc','m31_tile4_lot.unique']
         
         
         
@@ -437,7 +448,8 @@ class data_load:
                 break
         
         #ascii data read in to astropy table
-        
+        #m31 treated differently here because of occasional extra columns
+        #end result is the same
         if galaxy=='m31':
         
             frame=pd.read_csv(path_to_file + file,sep="\s+",names=excolumnames)
@@ -445,14 +457,17 @@ class data_load:
         else:
             
             frame=ascii.read(path_to_file + file)
+            
+            #dataframe created
+            
             frame=frame.to_pandas()
 
-        
-            #converted to dataframe
+
     
             
             #columns assigned
             
+            #extra columns dropped from ngc205 and m32
             
             if self.galaxy=='ngc205' or self.galaxy=='m32':
                 
@@ -461,15 +476,17 @@ class data_load:
                 frame=frame.drop(['col24'],axis=1)
                 frame=frame.drop(['col23'],axis=1)
             
+            #column names assigned
             
             frame.columns=columnames
 
         
-        #functions called to create decimal coordinate columns and flag column
+        #decimal and tangent coordinates constructed
         make_deg_coord(frame)
         make_tan_coord(frame,self.galaxy)
         
         #optional skip when initiating class for the cuts/extinction corrections
+        #all True by default, so mostly will be run
         
         if CLS==True:
             
@@ -640,7 +657,9 @@ class data_load:
         #galaxies attribute used to match galaxy to associated trgb cut
         
         galaxies=self.galaxies
-        
+        #by default, uses trgb cut coded into the trgbcuts list
+        #optionally allows cut to be included as argument when method is run
+        #in which case it will make that cut instead
         if cut==0:        
             for i in range(len(galaxies)):
                 
@@ -688,7 +707,9 @@ class data_load:
     
 
                 
-    
+    #separate AGB stars into C-AGB and M-AGB using 2 colour cuts
+    #takes cuts from lists inside method, or optional arguments when
+    #method is called
     def CM_cut(self,hkcut=0,jhcut=0):
         
         #variables set
@@ -707,7 +728,7 @@ class data_load:
         jhcuts=[0.883,0.857,0.930,0.913,0.91]
         jhsigs=[0.046,0.042,0.049,0]
         
-        #match galaxy to cut
+        #match galaxy to cut, or make cut from argument if used
         
         if hkcut == 0 or jhcut == 0:
         
@@ -750,9 +771,13 @@ class data_load:
         #mdata=mdata.dropna()
         #cdata=cdata.dropna()
         
+        #set as class attributes
         self.mdata=mdata
         self.cdata=cdata
-        
+    
+    
+    #REDUNDANT
+    #could be useful for some more awkward cutting techniques
     def CM_cut_slant(self,slant_m='-'):
         
         #create copy to hold cut data for completeness
@@ -804,7 +829,7 @@ class data_load:
         self.mdata=mdata.dropna()
         self.cdata=cdata.dropna()
     #separate C and M stars based on defined triangle in 2D colour space
-    
+    #REDUNDANT
     def CM_polygon_cut(self):
         
         #create copies for holding separated data
@@ -903,7 +928,8 @@ class data_load:
             plt.gca().invert_yaxis()
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
-        
+    
+    #same as above method, but with h-k on x axis
     def plot_hk_cmd(self,stars='all',marker='o',markersize=1,color='blue'):
         
         #conditional statements plot only c,m, or both sets depending on 
@@ -1035,6 +1061,8 @@ class data_load:
     #plot contour map of stars
     def plot_contour(self,overlay=False):
         
+        #set graphing visuals
+        
         sns.set_context('paper')
         
         params={'legend.fontsize':'12','axes.labelsize':'18',
@@ -1043,10 +1071,11 @@ class data_load:
         plt.rcParams.update(params)
         plt.rcParams.update({'figure.max_open_warning': 0})
         
+        #read in dataframe
         data=self.data
-        
+        #make plot
         sns.kdeplot(data.xi,data.eta,levels=np.logspace(-1,1,50))
-        
+        #don't reinvert x axis and relabel if being used as an overlay
         if overlay==False:
             
             
@@ -1165,31 +1194,55 @@ class data_load:
         #print out result
         print('C/M = ' + str(CM) + ' [Fe/H] = ' + str(FEH))
         
+        
+        #method to construct elliptical slices and find [Fe/H] in each slices
+        #takes semimajor axis of smallest ellipse and outside slice as inputs
     def FEH_slices(self,a_width=0.03,outer_rad=0.3):
         
+        #read in AGB data together, and individual C and M catalogues
         cdata=self.cdata
         mdata=self.mdata
         data=self.data
+        #list of eccentricities of galaxies
         eccentricities=[0.44,0,0,0]
+        #list of rotation angles of galaxies
         rotations=[56,0,0,0]
+        #redundant, for estimating eccentricity
         atup=(0.075,0.089)
         btup=(0.032,-0.042)
+        #initialise selection_utils instance for constructing ellipses
         check=selection_utils()
+        #list for holding data slices
         slices=[]
+        
+        #fill slices with elliptical selections of decreasing size, from outer_rad to a_width
         for i in range(int((outer_rad*1000)/(a_width*1000))):
         
+            
             slices.append(check.select_ellipse(self.data,afl=outer_rad-(a_width * i),eccentricity=eccentricities[0],clockrot=rotations[0]))
+            
+            
+            
+        #
+        #remove overlapping data between ellipses, leaving only elliptical slices in the list
+        #
         
         
-
+        
         for i in range(len(slices)-1):
+            #looks ugly but far faster than using more nested loops
+            
+            #produce list of common points between outer and inner ellipse at each element in slices list
             locs=np.where(slices[i].orig_index==slices[i+1].orig_index)
-
+            #np.where produces extra array for some reason
+            #remove that
             locs=locs[0]
+            #match index in array to original pandas index
             indices=[]
             for j in locs:
                 indices.append(slices[i].index[j])
-
+                
+            #wipe all common values in outer slice
             for k in indices:
                 slices[i].loc[k]=np.nan
                 
