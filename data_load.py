@@ -149,6 +149,60 @@ class data_load:
                 elif galaxy=='m31':
                     tra=10.68470833
                     tdec=41.26875
+                    
+                elif galaxy=='and1':
+                    tra=11.41583333
+                    tdec=38.04111111
+                    
+                elif galaxy=='and2':
+                    tra=19.12416667
+                    tdec=33.41916667
+                    
+                elif galaxy=='and3':
+                    tra=8.84458333
+                    tdec=36.50472222
+                    
+                elif galaxy=='and6':
+                    tra=357.94333333
+                    tdec=24.58638889
+                    
+                elif galaxy=='and7':
+                    tra=351.63208333
+                    tdec=50.67583333
+                    
+                elif galaxy=='and10':
+                    tra=16.64041667
+                    tdec=44.80438889
+                    
+                    
+                elif galaxy=='and14':
+                    tra=12.89583333
+                    tdec=29.69694444
+                    
+                elif galaxy=='and15':
+                    tra=18.57791667
+                    tdec=38.1175
+                    
+                elif galaxy=='and16':
+                    tra=14.87416667
+                    tdec=32.37666667
+                    
+                elif galaxy=='and17':
+                    tra=9.27916667
+                    tdec=44.32222222
+                    
+                elif galaxy=='and18':
+                    tra=0.56041667
+                    tdec=45.08888889
+                    
+                    
+                elif galaxy=='and19':
+                    tra=4.88375
+                    tdec=35.04363889
+                    
+                elif galaxy=='and20':
+                    tra=1.8779166700000003
+                    tdec=35.13233333
                 
                 coords=create_tangent_coords(frame,tra,tdec)
                 
@@ -164,7 +218,7 @@ class data_load:
                 if self.galaxy=='m32':
                     for i in range(len(frame.jcis)):
                     
-                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or frame.jmag[i]-frame.hmag[i] > 17:
+                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.hcis[i]==-8.0) or frame.jmag[i]-frame.hmag[i] > 17:
                             frame.loc[i]=np.nan
                 
                 else:
@@ -362,7 +416,7 @@ class data_load:
         
         #galaxy list for reading in the correct file
         
-        galaxies=['ngc147','ngc185','ngc205','m32','m31']
+        galaxies=['ngc147','ngc185','ngc205','m32','m31','and1','and2','and3','and6','and7','and10','and14','and15','and16','and17','and18','and19','and20']
         
         #names of datafiles
         
@@ -375,11 +429,11 @@ class data_load:
         
         #associate galaxy input with appropriate file
         
-        for i in range(len(infilenames)):
+        for i in range(len(galaxies)):
                 
             if galaxy==galaxies[i]:
                     
-                file=infilenames[i]
+                file=galaxies[i]
                 break
         
         #ascii data read in to astropy table
@@ -464,7 +518,7 @@ class data_load:
         #cuts for each galaxy placed in list. Defined from inspection of
         #j-k CMD
         
-        forecuts=[0.992,0.964,1.00,0.92,1.002]
+        forecuts=[0.992,0.964,1.00,0.92,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,]
         foresigs=[0.103,0.079,0.085,0.01]
         #loop through galaxies to match galaxy with foreground cut
         
@@ -577,7 +631,7 @@ class data_load:
         
 
         
-        trgbcuts=[18.137,17.862,17.930,17.8,17.8]
+        trgbcuts=[18.137,17.862,17.930,17.8,17.8,18.27,18.05,18.43,18.41,18.27,18.27,18.77,18.38,17.92,18.52,19.65,18.75,18.66]
         trgbsigs=[0.141,0.110,0.066,0.67]
             
  
@@ -979,11 +1033,28 @@ class data_load:
             axs[1].invert_xaxis()
     
     #plot contour map of stars
-    def plot_contour(self):
+    def plot_contour(self,overlay=False):
+        
+        sns.set_context('paper')
+        
+        params={'legend.fontsize':'12','axes.labelsize':'18',
+        'axes.titlesize':'14','xtick.labelsize':'12',
+        'ytick.labelsize':'12','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
+        plt.rcParams.update(params)
+        plt.rcParams.update({'figure.max_open_warning': 0})
         
         data=self.data
         
-        sns.kdeplot(data.xi,data.eta,levels=np.logspace(-0.5, 1., 10))
+        sns.kdeplot(data.xi,data.eta,levels=np.logspace(-1,1,50))
+        
+        if overlay==False:
+            
+            
+            
+            plt.ylabel(r'$\eta$')
+            plt.xlabel(r'$\xi$')
+            plt.gca().invert_xaxis()
+        
         
         
         

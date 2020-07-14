@@ -195,7 +195,7 @@ class isochrones(data_read):
 
         plt.legend()
         
-    def plot_simlum(self,isofile,linestyle='solid',overlay=False,pop='multiple'):
+    def plot_simlum(self,isofile='lumfuncs/initial.dat',linestyle='solid',overlay=False,pop='multiple'):
                 
         def apparent(M,dguess):
             m = M + 5*np.log10(dguess/10)
@@ -230,11 +230,11 @@ class isochrones(data_read):
         
         iso=iso.to_pandas()
         
-        print(iso.kmag)
+
         
         iso.magbin=apparent(iso.magbin,distance)
         
-        print(iso.magbin)
+
             #label=8 is the AGB phase in padova isochrones
             
 

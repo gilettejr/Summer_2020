@@ -40,9 +40,9 @@ class cuts:
         #plotting stuff
         sns.set_context('paper')
         
-        params={'legend.fontsize':'15','axes.labelsize':'18',
-        'axes.titlesize':'18','xtick.labelsize':'18',
-        'ytick.labelsize':'18','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
+        params={'legend.fontsize':'15','axes.labelsize':'16',
+        'axes.titlesize':'18','xtick.labelsize':'16',
+        'ytick.labelsize':'16','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
         plt.rcParams.update(params)
         plt.rcParams.update({'figure.max_open_warning': 0})
         
@@ -58,13 +58,15 @@ class cuts:
         plt.legend(markerscale=3,frameon=False)
         #invert axis and set labels
         cisplot.invert_yaxis()
-        plt.ylabel('$K_0$')
-        plt.xlabel('$J_0$-$K_0$')
+        plt.ylabel('K$_0$')
+        plt.xlabel('(J-K)$_0$')
+        #plt.tight_layout()
+        plt.savefig('report_images/147kj_cuts.pdf')
         
     #plot and colour code selections on a 2CD
     def plot_cc(self):
 
-        a=plt.figure(figsize=[12,12])
+        a=plt.figure(figsize=[7,6])
         
         #retrieve attributes
         cisdata=self.cisdata
@@ -77,9 +79,9 @@ class cuts:
         
         sns.set_context('paper')
         
-        params={'legend.fontsize':'15','axes.labelsize':'18',
-        'axes.titlesize':'18','xtick.labelsize':'18',
-        'ytick.labelsize':'18','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
+        params={'legend.fontsize':'15','axes.labelsize':'16',
+        'axes.titlesize':'18','xtick.labelsize':'16',
+        'ytick.labelsize':'16','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
         plt.rcParams.update(params)
         plt.rcParams.update({'figure.max_open_warning': 0})
         
@@ -95,8 +97,12 @@ class cuts:
         plt.legend(markerscale=3,frameon=False,loc='upper left')
         
         #set labels
-        plt.ylabel('$(H-K)_0$')
-        plt.xlabel('$(J-H)_0$')
-
+        plt.ylabel('(H-K)$_0$',labelpad=-8)
+        plt.xlabel('(J-H)$_0$')
+        #plt.tight_layout()
+        plt.savefig('report_images/147cc_cuts.pdf')
+    #def plot_cmd_cc(self):
+        
+        
     
     
