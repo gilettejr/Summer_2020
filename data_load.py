@@ -1251,25 +1251,28 @@ class data_load:
             #slices[i]=slices[i].dropna()
             
             
-
+        #now match slices to m and c datasets to determine c/m ratio
 
 
         mslices=[]
         cslices=[]
+        
+        #need to create copies to prevent dataframes being
+        #continuously altered
         
         for i in slices:
             
             mslices.append(i.copy())
             cslices.append(i.copy())
         
-
+        #find locations of m/c data in slices
         
         for i in range(len(slices)):
             
             clocs=np.where(mslices[i].orig_index==mdata.orig_index)
             mlocs=np.where(cslices[i].orig_index==cdata.orig_index)
             
-
+            #match array index to pandas index
             
             mindices=[]
             cindices=[]
@@ -1282,12 +1285,13 @@ class data_load:
                 
                 cindices.append(mslices[i].index[j])
                 
-
+            #wipe C stars from m data slices
                 
             for k in mindices:
                 
                 mslices[i].loc[k]=np.nan
-
+            
+            #wipe M stars from c data slices
 
             for k in cindices:
                 
@@ -1297,10 +1301,12 @@ class data_load:
             mslices[i]=mslices[i].dropna()
             cslices[i]=cslices[i].dropna()
             
-
+        #construct new lists to find c/m ratio
             
         mnum=[]
         cnum=[]            
+        
+        #find number of c and m stars in each slices
         
         for i in range(len(slices)):
             mnum.append(len(mslices[i]))
@@ -1309,10 +1315,15 @@ class data_load:
         mnum=np.array(mnum)
         cnum=np.array(cnum)
         
+        #create arrray of c/m ratios in each slices
         
         cm=cnum/mnum
         
+        #convert to [Fe/H]
+        
         FEH= self.CM_to_FEH(cm)
+        
+        #plot radial distribution
         
         xdata=np.linspace(outer_rad,0,num=(outer_rad*1000)/(a_width*1000))
         plt.plot(xdata,FEH,linestyle='none',marker='o',markersize='3',color='black')
@@ -1363,6 +1374,8 @@ class data_load:
         
 
     #28500    
+    
+        
         
     def plot_cross(self,file='crossmatching/spitzer/m32_cross'):
         
