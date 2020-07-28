@@ -6,9 +6,12 @@ import seaborn as sns
 from graphing_utils import graphing_utils
 from selection_utils import selection_utils
 
+
 #imports for manipulating astronomical data
 from astropy.coordinates import SkyCoord
 from astropy.io import ascii
+from astropy.modeling import fitting
+from astropy.modeling.models import Sersic1D
 
 #extinction correction package
 from dustmaps.sfd import SFDQuery
@@ -22,13 +25,21 @@ from sklearn import neighbors
 from scipy.signal import savgol_filter
 
 #libraries for seperating C and M with non horizontal/perpendicular lines
-from shapely.geometry import Point
-from shapely.geometry.polygon import Polygon
+from shapely.geometry import Point, box, MultiPoint
+from shapely.geometry.polygon import Polygon,LinearRing
 
 #libraries for defining ellipses
 import shapely.affinity
 from descartes import PolygonPatch
 #class for processing starting from the raw WFCAM datasets
+
+from matplotlib.patches import Ellipse,Rectangle
+
+
+
+
+
+
 # =============================================================================
 # __init__ carries out cls, magerr cuts and corrects for reddening, converts
 # data into dataframe format. Adds tangent coordinate and decimal ra/dec
@@ -41,6 +52,16 @@ class data_load:
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
     def __init__(self,galaxy, CLS=True,CLS_mags='all', mag=True, ext=True, path_to_file='initial_data/'):
+        
+        def data_corners(data):
+            
+            corner1=(np.max(data.xi),np.max(data.eta))
+            corner2=(np.max(data.xi),np.min(data.eta))
+            corner3=(np.min(data.xi),np.min(data.eta))
+            corner4=(np.min(data.xi),np.max(data.eta))
+            
+            return np.array([corner1,corner2,corner3,corner4])
+        self.data_corners=data_corners
         
         def CM_to_FEH(CM):
         
@@ -723,9 +744,9 @@ class data_load:
         #hkcuts=[0.44,0.44,0.60,0.57]
         #jhcuts=[0.82,0.82,0.77,0.93]
         
-        hkcuts=[0.337,0.323,0.407,0.477]
+        hkcuts=[0.337,0.323,0.407,0.477,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         hksigs=[0.047,0.052,0.034,0]
-        jhcuts=[0.883,0.857,0.930,0.913,0.91]
+        jhcuts=[0.883,0.857,0.930,0.913,0.91,0,0,0,0,0,0,0,0,0,0,0,0,0]
         jhsigs=[0.046,0.042,0.049,0]
         
         #match galaxy to cut, or make cut from argument if used
@@ -736,8 +757,8 @@ class data_load:
                 
                 if self.galaxies[i]==self.galaxy:
                     
-                    hkcut=hkcuts[i]+hksigs[i]
-                    jhcut=jhcuts[i]+jhsigs[i]
+                    hkcut=hkcuts[i]
+                    jhcut=jhcuts[i]
                     
                     break
                 
@@ -765,6 +786,8 @@ class data_load:
             else:
                 
                 cdata.loc[i]=np.nan
+                
+
         
         #wipe NaN values
         
@@ -1100,31 +1123,10 @@ class data_load:
         plt.figure()
         
 
-        sns.kdeplot(lum_func.dropna(),color='white',gridsize=100)
+        sns.kdeplot(lum_func.dropna(),color='black')
+        
         plt.xlabel('$K_0$')
-        line = plt.gca().get_lines()[0]
-        xd = line.get_xdata()
-        yd = line.get_ydata()
-        
-        diffy = np.diff(yd) / np.diff(xd)
-        diffx = (np.array(xd)[:-1] + np.array(xd)[1:]) / 2
-        
-        #plt.plot(diffx,diffy,label='diff_lum_func')
-        
-        twodiffy = np.diff(diffy) / np.diff(diffx)
-        twodiffx = (np.array(diffx)[:-1] + np.array(diffx)[1:]) / 2        
-        
-        #plt.plot(twodiffx,twodiffy)
-        
-        # 300 represents number of points to make between T.min and T.max
-        xnew = np.linspace(twodiffx.min(), twodiffx.max(), 300) 
-        
-        spl = make_interp_spline(twodiffx, twodiffy, k=3)  # type: BSpline
-        ynew = spl(xnew)
-        
-        plt.plot(xnew, ynew,label='diff2_lum_func')
-        plt.legend()
-        plt.show()
+        plt.gca().invert_xaxis()
     
 
     
@@ -1197,16 +1199,24 @@ class data_load:
         
         #method to construct elliptical slices and find [Fe/H] in each slices
         #takes semimajor axis of smallest ellipse and outside slice as inputs
-    def FEH_slices(self,a_width=0.03,outer_rad=0.3):
+    def make_slices(self,a_width=0.03,outer_rad=0.3):
         
         #read in AGB data together, and individual C and M catalogues
-        cdata=self.cdata
-        mdata=self.mdata
+
         data=self.data
+        self.a_width=a_width
+        self.outer_rad=outer_rad
+        
         #list of eccentricities of galaxies
-        eccentricities=[0.44,0,0,0]
+        eccentricities=[0.46,0.22,0,0]
         #list of rotation angles of galaxies
-        rotations=[56,0,0,0]
+        rotations=[34.2,45.9,0,0]
+        
+        for i in range(len(self.galaxies)):
+            if self.galaxy==self.galaxies[i]:
+                
+                eccentricity=eccentricities[i]
+                rotation=rotations[i]
         #redundant, for estimating eccentricity
         atup=(0.075,0.089)
         btup=(0.032,-0.042)
@@ -1214,12 +1224,15 @@ class data_load:
         check=selection_utils()
         #list for holding data slices
         slices=[]
-        
+        areas=[]
         #fill slices with elliptical selections of decreasing size, from outer_rad to a_width
         for i in range(int((outer_rad*1000)/(a_width*1000))):
         
-            
-            slices.append(check.select_ellipse(self.data,afl=outer_rad-(a_width * i),eccentricity=eccentricities[0],clockrot=rotations[0]))
+            ellipse,area=check.select_ellipse(self.data,afl=outer_rad-(a_width * i),eccentricity=eccentricity,clockrot=rotation)
+            slices.append(ellipse)
+            areas.append(area)
+        
+        self.ellipticity=eccentricity
             
             
             
@@ -1227,9 +1240,14 @@ class data_load:
         #remove overlapping data between ellipses, leaving only elliptical slices in the list
         #
         
+
+
         
         
         for i in range(len(slices)-1):
+            
+            areas[i]=areas[i]-areas[i+1]
+            
             #looks ugly but far faster than using more nested loops
             
             #produce list of common points between outer and inner ellipse at each element in slices list
@@ -1245,13 +1263,38 @@ class data_load:
             #wipe all common values in outer slice
             for k in indices:
                 slices[i].loc[k]=np.nan
-                
+            
+            
 
-                        
-            #slices[i]=slices[i].dropna()
+        for i in slices:
+        
+            i=i.dropna()
+
+        self.areas=areas
+        self.slices=slices
+
+            
+        
             
             
         #now match slices to m and c datasets to determine c/m ratio
+
+
+        
+            
+            
+        
+    def FEH_slices(self):
+        
+        #read in AGB data together, and individual C and M catalogues
+        cdata=self.cdata
+        mdata=self.mdata
+        slices=self.slices
+        outer_rad=self.outer_rad
+        a_width=self.a_width
+        
+        #list of eccentricities of galaxies
+
 
 
         mslices=[]
@@ -1325,7 +1368,7 @@ class data_load:
         
         #plot radial distribution
         
-        xdata=np.linspace(outer_rad,0,num=(outer_rad*1000)/(a_width*1000))
+        xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=(outer_rad*1000)/(a_width*1000))
         plt.plot(xdata,FEH,linestyle='none',marker='o',markersize='3',color='black')
         m,b=np.polyfit(xdata,FEH,1)
         plt.plot(xdata, m*xdata + b,color='red')
@@ -1335,16 +1378,518 @@ class data_load:
 
         
              
+    def slice_count_profile(self,background_deg,crowding_num=0):
+        
+        print(background_deg)
+        
+        slices=self.slices
+        areas=self.areas
+        outer_rad=self.outer_rad
+        a_width=self.a_width
+        ellipticity=self.ellipticity
+        slice_nums=[]
+        
+        for i in slices:
+            slice_nums.append(len(i.dropna()))
+            
+        slice_nums=np.array(slice_nums)
+
+        areas=np.array(areas)
+        
+        slice_count_uncs=np.sqrt(slice_nums)
+
+
+
+        slice_star_densities=slice_nums/areas
+        slice_star_densities_uncs=(np.sqrt((slice_count_uncs/areas)**2 + background_deg[1]**2))
+
+        slice_star_densities=slice_star_densities-background_deg[0]
+        
+        slice_star_densities=slice_star_densities/3600
+        slice_star_densities_uncs=slice_star_densities_uncs/3600
         
         
         
+        xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=(outer_rad*1000)/(a_width*1000))
+        xdata=xdata*60
+        #convert from a to r_eff
+        xdata=xdata*(1-ellipticity/3)
+        ydata=slice_star_densities
+        yerr=slice_star_densities_uncs
+
+        
+        plt.errorbar(xdata,ydata,yerr=yerr,linestyle='none',marker='o',markersize=5,capsize=2,color='black',label='AGB data')
+        plt.xlabel('Semi-major axis/arcmins')
+        plt.ylabel('Nstars/arcmins$^2$')
+        
+        #n147 params
+        
+        xdata_orig=xdata
+            
+        xdata=xdata[:len(xdata)-(crowding_num)]
+        ydata=ydata[:len(ydata)-(crowding_num)]
+        yerr=yerr[:len(yerr)-(crowding_num)]
+        
+        
+        
+        if self.galaxy=='ngc147':
+        
+            model=Sersic1D(r_eff=5.2,n=1.8)
+            
+        elif self.galaxy=='ngc185':
+            
+            model=Sersic1D(r_eff=1.7,n=1.00)
+            
+            
+        
+        fit=fitting.LevMarLSQFitter()
+        
+        s=fit(model,xdata,ydata,weights=1/yerr)
+        def calc_reduced_chi_square(fit, x, y, yerr, N, n_free):
+            '''
+            fit (array) values for the fit
+            x,y,yerr (arrays) data
+            N total number of points
+            n_free number of parameters we are fitting
+            '''
+            return 1.0/(N-n_free)*sum(((fit - y)/yerr)**2)
+    
+        print(calc_reduced_chi_square(s(xdata),xdata,ydata,yerr=yerr,N=len(ydata),n_free=3))
+        
+        xdata=np.linspace(min(xdata_orig),max(xdata_orig),1000)
+        
+        plt.plot(xdata,s(xdata),label='Sersic Fit with r$_{eff}$ = ' + str(round(s.r_eff.value,3)) + ', n = ' + str(round(s.n.value,3)))
+        plt.legend()
+        print(s)
+        a=s.r_eff
+        n=ellipticity
+        
+        
+        plt.yscale('log')
+        #r_eff=a*(1-n/3)
+        
+        #print('r_eff = ' + str(r_eff)+ ' arcmins')
+        
+        
+        
+
+        
+        
+    def slice_mag_profile(self):
+        
+        def mag_to_flux(m,zpflux):
+            
+            f=zpflux*10**(-m/2.5)
+            
+            return f
+        
+        def flux_to_mag(f,zpflux):
+            
+            m=2.5*np.log10(zpflux/f)
+            
+            return m
+            
+
+
+        
+        
+        jzpoint=1556.8
+        hzpoint=1038.3
+        kzpoint=644.1
+        
+
+        
+        slices=self.slices
+        areas=self.areas
+        outer_rad=self.outer_rad
+        a_width=self.a_width
+        
+        slice_fluxes=[]
+        
+        for i in slices:
+            slice_fluxes.append(np.sum(mag_to_flux(i.jmag,jzpoint)))
+            
+        areas=np.array(areas)
+
+        
+        
+        slice_fluxes=np.array(slice_fluxes)
+            
+
+        
+        slice_fluxes_deg=slice_fluxes/areas
+        slice_fluxes_sec=slice_fluxes_deg/(3600^2)
+        
+        slice_mags=flux_to_mag(slice_fluxes_sec,jzpoint)
+        
+        xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=(outer_rad*1000)/(a_width*1000))
+        ydata=slice_mags
+        
+        plt.plot(xdata,ydata,marker='o',color='black')
+        plt.gca().invert_yaxis()
+        plt.xlabel('Semi-major axis/degrees')
+        plt.ylabel('Surface Brightness in Jmag/arcsec$^2$')
+        
+
         #make ellipses
         
         #cut redundant points
         
         #calculate C/M, FEH
         
+    def find_background_density_border(self,marker='o',markersize='1',color='black',borderwidth=0.07,show_figure=False):
+        data=self.data
+        border_data=data.copy()
+        corner_locs=self.data_corners(data)
+        
+        for i in corner_locs:
             
+            i=np.asarray(i)
+            
+        
+        subtraction_identity=np.array([[-1,-1],[-1,1],[1,1],[1,-1]])
+        
+        spatial_subtraction_matrix=borderwidth * subtraction_identity
+        
+        inner_corner_locs=corner_locs + spatial_subtraction_matrix
+            
+            
+        inner_corner_locs=map(tuple,inner_corner_locs)
+        inner_corner_locs=tuple(inner_corner_locs)
+        
+        select_border=selection_utils()
+        select_border.select_stars(border_data,inner_corner_locs[0],inner_corner_locs[2],unselect=True)
+        
+        inner_area=(inner_corner_locs[0][0]-inner_corner_locs[2][0]) * (inner_corner_locs[0][1]-inner_corner_locs[2][1])
+        outer_area=(corner_locs[0][0]-corner_locs[2][0]) * (corner_locs[0][1]-corner_locs[2][1])
+        
+
+        
+        
+        
+        border_area=outer_area-inner_area
+
+        
+        
+        border_num=len(border_data.dropna())
+        
+        border_err=np.sqrt(border_num)
+        
+        
+        if show_figure==True:
+            
+            borders=[Rectangle(xy=inner_corner_locs[2],width=inner_corner_locs[0][0]-inner_corner_locs[2][0],height=inner_corner_locs[0][1]-inner_corner_locs[2][1],fill=False)]
+            
+            
+            plt.rc('axes',labelsize=20)
+            fig,ax=plt.subplots()
+            ax.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color=color,zorder=1)
+            for i in borders:
+                
+                ax.add_artist(i)
+            ax.invert_xaxis()
+            ax.set_ylabel(r'$\eta$')
+            ax.set_xlabel(r'$\xi$')
+            
+         
+            
+        return np.array([border_num,border_err])/border_area
+    def find_background_density_boxes(self,marker='o',markersize='1',color='black',boxsize=0.2,show_figure=False):
+        
+        data=self.data
+        c1dat=data.copy()
+        c2dat=data.copy()
+        c3dat=data.copy()
+        c4dat=data.copy()
+        
+        #set corners
+        
+        corner1=(np.max(data.xi),np.max(data.eta))
+        corner2=(np.max(data.xi),np.min(data.eta))
+        corner3=(np.min(data.xi),np.min(data.eta))
+        corner4=(np.min(data.xi),np.max(data.eta))
+        
+        corner1a=(np.max(data.xi)-boxsize,np.max(data.eta)-boxsize)
+        corner2a=(np.max(data.xi)-boxsize,np.min(data.eta)+boxsize)
+        corner3a=(np.min(data.xi)+boxsize,np.min(data.eta)+boxsize)
+        corner4a=(np.min(data.xi)+boxsize,np.max(data.eta)-boxsize)
+        
+        c1=selection_utils()
+        corner1s=c1.select_stars(c1dat,corner1,corner1a)
+        
+        c2=selection_utils()
+        corner2s=c2.select_stars(c2dat,corner2,corner2a)
+        
+        c3=selection_utils()
+        corner3s=c3.select_stars(c3dat,corner3,corner3a)
+        
+        c4=selection_utils()
+        corner4s=c4.select_stars(c4dat,corner4,corner4a)
+        
+        
+        corner_dats=[c1dat.dropna(),c2dat.dropna(),c3dat.dropna(),c4dat.dropna()]
+        corner_nums=[]
+        
+        for i in corner_dats:
+            corner_nums.append(len(i))
+        
+
+        area=boxsize**2
+        
+        corner_num=np.sum(np.array(corner_nums))
+        
+        corner_p=corner_num/(area*4)
+        
+
+        
+        
+        if show_figure==True:
+        
+            squares=[Rectangle(xy=corner3,width=boxsize,height=boxsize,fill=False),Rectangle(xy=corner1a,width=boxsize,height=boxsize,fill=False),Rectangle(xy=corner2s[1],width=boxsize,height=boxsize,fill=False),Rectangle(xy=corner4s[3],width=boxsize,height=boxsize,fill=False)]
+            
+            plt.rc('axes',labelsize=20)
+            fig,ax=plt.subplots()
+            ax.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color=color,zorder=1)
+            for i in squares:
+                
+                ax.add_artist(i)
+            ax.invert_xaxis()
+            ax.set_ylabel(r'$\eta$')
+            ax.set_xlabel(r'$\xi$')
+            
+        
+        return corner_p
+    
+    def find_background_grad(self,ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
+        
+        def eq_to_tan(ra,dec,tangentra,tangentdec):
+            
+
+        
+            ra = np.radians(ra)
+            dec = np.radians(dec)
+            
+            #tangent co-ordinates also converted to radians
+            
+            tanra = np.radians(tangentra)
+            tandec = np.radians(tangentdec)
+            
+            #conversion for xi carried out
+            
+            xi = (np.cos(dec)*np.sin(ra-tanra))/(np.sin(dec)*np.sin(tandec) + np.cos(dec)*np.cos(tandec)*np.cos(ra-tanra))
+            
+            #conversion for eta carried out
+            
+            eta = (np.sin(dec)*np.cos(tandec)-np.cos(dec)*np.sin(tandec)*np.cos(ra-tanra))/(np.sin(dec)*np.cos(tandec)+np.cos(dec)*np.sin(tandec)*np.cos(ra-tanra))
+            
+            #co-ordinates converted to degrees and set as attributes
+
+            return xi,eta
+        
+        def rotate_coords(xi,eta,theta):
+            
+            xi_rad=np.radians(xi.copy())
+            eta_rad=np.radians(eta.copy())
+            
+            alpha=eta_rad*np.sin(theta)+xi_rad * np.cos(theta)
+            beta=eta_rad * np.cos(theta)+ xi_rad * -np.sin(theta)
+            
+            alpha=np.degrees(alpha)
+            beta=np.degrees(beta)
+            
+            return np.array([alpha,beta])
+        
+        
+        def outer_boundary(data,x,y):
+            
+            corner1loc=np.where(data==np.min(data.alpha))[0][0]
+            corner2loc=np.where(data==np.min(data.beta))[0][0]
+            corner3loc=np.where(data==np.max(data.alpha))[0][0]
+            corner4loc=np.where(data==np.max(data.beta))[0][0]
+            
+            corner1loc=data.index[data['alpha'] == np.min(data.alpha)].tolist()[0]
+            corner2loc=data.index[data['beta'] == np.min(data.beta)].tolist()[0]
+            corner3loc=data.index[data['alpha'] == np.max(data.alpha)].tolist()[0]
+            corner4loc=data.index[data['beta'] == np.max(data.beta)].tolist()[0]
+            
+            
+            
+            corner1=(data.alpha[corner1loc],data.beta[corner1loc])
+            corner2=(data.alpha[corner2loc],data.beta[corner2loc])
+            corner3=(data.alpha[corner3loc],data.beta[corner3loc])
+            corner4=(data.alpha[corner4loc],data.beta[corner4loc])
+            
+            boundary=LinearRing([corner1,corner2,corner3,corner4])
+            
+            return boundary
+            
+            
+        data=self.data
+        
+
+        
+        #wipe galaxy
+        
+        e=selection_utils()
+        
+        dE_stars=e.select_ellipse(data,afl=ellipse_a,eccentricity=ellipticity,clockrot=clockrot,unselect=True)
+        dE_ellipse=dE_stars[2]
+        
+        data=dE_stars[0]
+
+        
+        #convert m31 coords to local tangent coords
+
+        
+        m31ra=10.68470833
+        m31dec=41.26875
+        
+        if self.galaxy=='ngc205':
+            tra=10.09189356
+            tdec=41.68541564
+        elif self.galaxy=='m32':
+            tra=10.6742708
+            tdec=40.8651694
+        
+        m31xi,m31eta=eq_to_tan(m31ra,m31dec,tra,tdec)
+        
+
+        
+        #find angle of rotation
+        theta=np.arctan((m31eta)/(m31xi))
+        
+        xi=data.xi.copy()
+        eta=data.eta.copy()
+
+        #rotate
+        data['alpha']=rotate_coords(xi,eta,theta)[0]
+        data['beta']=rotate_coords(xi,eta,theta)[1]
+        
+        m31xi=np.degrees(m31xi)
+        m31eta=np.degrees(m31eta)
+        
+        m31_alpha=rotate_coords(m31xi,m31eta,theta)[0]
+        m31_beta=rotate_coords(m31xi,m31eta,theta)[1]
+        
+        print(m31_alpha)
+        print(m31_beta)
+        
+        if show_figure==True:
+        
+            plt.plot(data.alpha,data.beta,marker=marker,markersize=markersize,linestyle='none',color=color)
+            plt.gca().invert_xaxis()
+        
+        corner1=np.array([np.min(data.xi),np.min(data.eta)])
+        corner2=np.array([np.min(data.xi),np.max(data.eta)])
+        corner3=np.array([np.max(data.xi),np.max(data.eta)])
+        corner4=np.array([np.max(data.xi),np.min(data.eta)])
+        
+        corners=[corner1,corner2,corner3,corner4]
+        corners_rot=[]
+        for i in corners:
+            
+            corners_rot.append(rotate_coords(i[0],i[1],theta))
+        
+        
+        
+
+
+        border=LinearRing(corners_rot)
+        s=Polygon(border)
+        corners_x=np.array([corners_rot[0][0],corners_rot[1][0],corners_rot[2][0],corners_rot[3][0]])
+        
+        upper_bound=np.max(corners_x)-binwidth
+        lower_bound=np.min(corners_x)
+    
+        
+        #make bins
+        
+
+
+        #bin1
+        
+        bin_nums=[]
+        bin_areas=[]
+        bin_locs=[]
+        #define masked ellipse
+        mask=dE_ellipse
+        theta_deg=np.degrees(theta)
+        mask=shapely.affinity.rotate(dE_ellipse,-theta_deg)
+        x,y=mask.exterior.xy
+        plt.plot(x,y)
+        
+        while upper_bound-lower_bound > binwidth:
+        
+            bin_slice_fill=box(upper_bound-binwidth,-1.0,upper_bound,1.0)
+
+            bin_slice=bin_slice_fill.exterior
+        
+            #find intercepts
+            bin_corners=border.intersection(bin_slice)
+            
+            swap0=bin_corners[0]
+            swap1=bin_corners[1]
+            swap2=bin_corners[3]
+            swap3=bin_corners[2]
+            
+            corners=[swap0,swap1,swap2,swap3]
+            bin_corners=MultiPoint([swap0,swap1,swap2,swap3])
+            final_bin=Polygon(bin_corners)
+            x,y=final_bin.exterior.xy
+            if show_figure==True:
+                
+                plt.plot(x,y)
+
+            final_bin_area=final_bin.area
+            
+            box_data=data.copy()
+            
+            for i in box_data.index:
+                
+                if final_bin.contains(Point(box_data.alpha[i],box_data.beta[i]))==False:
+                    
+                    box_data.loc[i]=np.nan
+                    
+            bin_nums.append(len(box_data.dropna()))
+            
+            #subtract area overlapping with ellipse
+            
+            if bin_slice_fill.intersects(mask)==True:
+                
+                overlap_area=mask.intersection(bin_slice_fill).area
+                print(overlap_area)
+                final_bin_area=final_bin_area-overlap_area
+            
+            bin_locs.append(upper_bound-(binwidth/2))
+            bin_areas.append(final_bin_area)
+            upper_bound=upper_bound-binwidth
+            
+        bin_nums=np.array(bin_nums)
+        bin_locs=np.array(bin_locs)
+        bin_areas=np.array(bin_areas)
+        
+        bin_uncs=np.sqrt(bin_nums)
+        
+        bin_densities=(bin_nums/bin_areas)/3600
+        
+        bin_uncs=(bin_uncs/bin_areas)/3600
+        
+        bin_locs=bin_locs * 60
+        
+        m31_alpha=m31_alpha*60
+        print(m31_alpha)
+        m31_bin_locs=bin_locs-m31_alpha
+        print(m31_bin_locs)
+        background=pd.DataFrame({'bin_densities':bin_densities,'bin_uncs':bin_uncs,'bin_locs':bin_locs,'m31_bin_locs':m31_bin_locs})
+        
+        self.background=background
+        
+        #fit with Sersic profile
+        
+        plt.errorbar(background.m31_bin_locs,background.bin_densities,yerr=background.bin_uncs,capsize=2,marker=marker,color=color)
+        
+        
+        #plot graph in new coordinates
             
         #method to save data as binary parquet file, to be used by data_read class    
     def save_to_parquet(self,fileloc):
@@ -1386,6 +1931,46 @@ class data_load:
         plotter=graphing_utils()
         plotter.plot_kj_cmd(data)
         plotter.plot_kj_cmd(crossdata,color='red',overlay=True)
+        
+    def overplot_ellipse(self,ellipticity,a,PA,marker='o',markersize=1,color='black'):
+        
+        n147ra=[]
+        
+        data=self.data
+        
+        b=a*(1-ellipticity)
+        ell=Ellipse(xy=[0,0],height=a*2,width=b*2,angle=360-PA,facecolor='none',edgecolor='red',linestyle='--',linewidth=2)
+        
+        plt.rc('axes',labelsize=20)
+        fig,ax=plt.subplots()
+        ax.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color=color,zorder=1)
+        ax.add_artist(ell)
+        ax.invert_xaxis()
+        ax.set_ylabel(r'$\eta$')
+        ax.set_xlabel(r'$\xi$')
+        
+    
+    def overplot_ellipses(self,ellipticity,a_inner,a_outer,PA,marker='o',markersize=1,color='black'):
+        
+        data=self.data
+        majors=np.linspace(a_inner,a_outer,num=int((a_outer*1000)/(a_inner*1000)))
+        minors=majors*(1-ellipticity)
+        
+        ells=[]
+        
+        for i in range(len(majors)):
+            ells.append(Ellipse(xy=[0,0],height=majors[i]*2,width=minors[i]*2,angle=360-PA,facecolor='none',edgecolor='red',linestyle='--',linewidth=2))
+            
+        plt.rc('axes',labelsize=20)
+        fig,ax=plt.subplots()
+        ax.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color=color,zorder=1)
+        for i in ells:
+            ax.add_artist(i)
+        ax.invert_xaxis()
+        ax.set_ylabel(r'$\eta$')
+        ax.set_xlabel(r'$\xi$')
+        
+        
         
         
         
