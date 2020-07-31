@@ -1199,7 +1199,7 @@ class data_load:
         
         #method to construct elliptical slices and find [Fe/H] in each slices
         #takes semimajor axis of smallest ellipse and outside slice as inputs
-    def make_slices(self,a_width=0.03,outer_rad=0.3):
+    def make_slices(self,stars='agb',a_width=0.03,outer_rad=0.3):
         
         #read in AGB data together, and individual C and M catalogues
 
@@ -1208,9 +1208,9 @@ class data_load:
         self.outer_rad=outer_rad
         
         #list of eccentricities of galaxies
-        eccentricities=[0.46,0.22,0,0]
+        eccentricities=[0.46,0.22,0.43,0]
         #list of rotation angles of galaxies
-        rotations=[34.2,45.9,0,0]
+        rotations=[34.2,45.9,169.2,0]
         
         for i in range(len(self.galaxies)):
             if self.galaxy==self.galaxies[i]:
@@ -1218,19 +1218,20 @@ class data_load:
                 eccentricity=eccentricities[i]
                 rotation=rotations[i]
         #redundant, for estimating eccentricity
-        atup=(0.075,0.089)
-        btup=(0.032,-0.042)
+
         #initialise selection_utils instance for constructing ellipses
         check=selection_utils()
         #list for holding data slices
         slices=[]
         areas=[]
+        ellipse_shapes=[]
         #fill slices with elliptical selections of decreasing size, from outer_rad to a_width
         for i in range(int((outer_rad*1000)/(a_width*1000))):
         
-            ellipse,area=check.select_ellipse(self.data,afl=outer_rad-(a_width * i),eccentricity=eccentricity,clockrot=rotation)
-            slices.append(ellipse)
-            areas.append(area)
+            ellipse=check.select_ellipse(self.data,afl=outer_rad-(a_width * i),eccentricity=eccentricity,clockrot=rotation)
+            slices.append(ellipse[0])
+            areas.append(ellipse[1])
+            ellipse_shapes.append(ellipse[2])
         
         self.ellipticity=eccentricity
             
@@ -1247,7 +1248,8 @@ class data_load:
         for i in range(len(slices)-1):
             
             areas[i]=areas[i]-areas[i+1]
-            
+            intersection=ellipse_shapes[i].intersection(ellipse_shapes[i+1])
+            ellipse_shapes[i]=ellipse_shapes[i].difference(intersection)
             #looks ugly but far faster than using more nested loops
             
             #produce list of common points between outer and inner ellipse at each element in slices list
@@ -1272,6 +1274,7 @@ class data_load:
 
         self.areas=areas
         self.slices=slices
+        self.slice_shapes=ellipse_shapes
 
             
         
@@ -1413,7 +1416,6 @@ class data_load:
         xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=(outer_rad*1000)/(a_width*1000))
         xdata=xdata*60
         #convert from a to r_eff
-        xdata=xdata*(1-ellipticity/3)
         ydata=slice_star_densities
         yerr=slice_star_densities_uncs
 
@@ -1472,7 +1474,173 @@ class data_load:
         
         
         
+    def close_slice_count_profile(self):
+        
+        print('Make sure youve got a background dataframe for subtraction!')
+        #remake alpha coordinates
+        slice_shapes=self.slice_shapes
+        background=self.background
+        rotate_coords=self.rotate_coords
+        data=self.data
+        areas=self.areas
+        slices=self.slices
+        bin_shapes=self.bin_shapes
+        
+        outer_rad=self.outer_rad
+        a_width=self.a_width
+        
+        m31ra=10.68470833
+        m31dec=41.26875
+        
+        if self.galaxy=='ngc205':
+            tra=10.09189356
+            tdec=41.68541564
+        elif self.galaxy=='m32':
+            tra=10.6742708
+            tdec=40.8651694
+        
+        m31xi,m31eta=self.eq_to_tan(m31ra,m31dec,tra,tdec)
+        
 
+        
+        #find angle of rotation
+        theta=np.arctan((m31eta)/(m31xi))
+        
+        xi=data.xi.copy()
+        eta=data.eta.copy()
+        theta_deg=np.degrees(theta)
+        #rotate
+        
+        
+        
+        for i in slices:
+            i['alpha']=rotate_coords(xi,eta,theta)[0]
+            i['beta']=rotate_coords(xi,eta,theta)[1]
+        slice_shapes_rot=[]
+        for i in slice_shapes:
+        
+            slice_shapes_rot.append(shapely.affinity.rotate(i,-theta_deg))
+        
+        
+        slice_nums=[]
+        
+        for i in slices:
+            
+            slice_nums.append(len(i.dropna()))
+            
+        slice_nums=np.array(slice_nums)
+        areas=np.array(areas)
+        
+        slice_densities_deg=slice_nums/areas
+        slice_densities_unc=np.sqrt(slice_nums)
+        slice_densities_min=slice_densities_deg/3600
+        slice_densities_unc=(slice_densities_unc/areas)/3600
+        #background columns: bin_densities, bin_uncs, bin_locs
+        #areas in degrees for ease, background in mins
+        new_density=[]
+        new_uncs=[]
+        for i in range(len(slice_shapes_rot)):
+            slice_bin_densities=[]
+            slice_bin_densities_uncs=[]
+            slice_bin_areas=[]
+            for j in background.index:
+                
+
+                
+                if slice_shapes_rot[i].intersects(bin_shapes[j])==True:
+                    
+                    overlap_shape=slice_shapes_rot[i].intersection(bin_shapes[j])
+                    overlap_area=overlap_shape.area
+                    
+                    
+                    #subtract background
+                    overlap_density=slice_densities_min[i]-background.density_fit[j]
+                    overlap_density_unc=np.sqrt(slice_densities_unc[i]**2 + background.bin_uncs[j]**2)
+                    
+                    slice_bin_densities.append(overlap_density)
+                    slice_bin_densities_uncs.append(overlap_density_unc)
+                    slice_bin_areas.append(overlap_area)
+                    
+            slice_bin_areas=np.array(slice_bin_areas)
+            slice_bin_densities=np.array(slice_bin_densities)
+            
+            weightings=slice_bin_areas/slice_shapes_rot[i].area
+            
+            avg_density=np.average(slice_bin_densities,weights=weightings)
+            density_err=np.sqrt(np.sum(np.square(slice_bin_densities_uncs)))
+            new_density.append(avg_density)
+            new_uncs.append(density_err)
+
+            
+        xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=(outer_rad*1000)/(a_width*1000))
+        xdata=xdata*60
+            
+        ydata=new_density
+        yerr=new_uncs
+            
+        fig=plt.figure()
+        
+        density_distribution=pd.DataFrame({'a':xdata,'density':ydata,'density_err':yerr})
+        
+        density_distribution.to_parquet('205_radial_density')
+            
+        plt.errorbar(xdata,ydata,yerr=yerr,linestyle='none',capsize=2,marker='o',color='black')
+            
+                    
+            
+    def fit_close_profiles(self,crowding_num=2):
+        
+        distribution=pd.read_parquet('205_radial_density')
+        
+        xdata=distribution.a
+        ydata=distribution.density
+        yerr=distribution.density_err
+        
+        
+        plt.errorbar(xdata,ydata,yerr=yerr,marker='o',linestyle='none',color='black')
+        
+        plt.ylabel('Density (N/arcmins$^2$)')
+        plt.xlabel('Semi-major axis (arcmins)')
+        
+        xdata_orig=xdata
+            
+        xdata=xdata[:len(xdata)-(crowding_num)]
+        ydata=ydata[:len(ydata)-(crowding_num)]
+        yerr=yerr[:len(yerr)-(crowding_num)]
+        
+        
+        
+        if self.galaxy=='ngc205':
+        
+            model=Sersic1D(r_eff=2.0,n=1.5)
+            
+        elif self.galaxy=='m32':
+            
+            model=Sersic1D(r_eff=1.7,n=1.00)
+            
+            
+        
+        fit=fitting.LevMarLSQFitter()
+        
+        s=fit(model,xdata,ydata,weights=1/yerr)
+
+        xdata=np.linspace(min(xdata_orig),max(xdata_orig),num=1000)                   
+                    
+                    
+        plt.plot(xdata,s(xdata),label='Sersic Fit with a$_{eff}$ = ' + str(round(s.r_eff.value,3)) + ', n = ' + str(round(s.n.value,3)))
+        plt.legend()
+                
+                
+                
+ 
+        
+        #calculate density in each slice again
+        
+        #find overlapping area of each bin on each slice
+        
+        #make appropriate density reduction for each overlapping segment
+        
+        #average out slice density
         
         
     def slice_mag_profile(self):
@@ -1660,44 +1828,8 @@ class data_load:
         
         return corner_p
     
-    def find_background_grad(self,ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
-        
-        def eq_to_tan(ra,dec,tangentra,tangentdec):
-            
+    def find_background_grad(self,stars='agb',ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
 
-        
-            ra = np.radians(ra)
-            dec = np.radians(dec)
-            
-            #tangent co-ordinates also converted to radians
-            
-            tanra = np.radians(tangentra)
-            tandec = np.radians(tangentdec)
-            
-            #conversion for xi carried out
-            
-            xi = (np.cos(dec)*np.sin(ra-tanra))/(np.sin(dec)*np.sin(tandec) + np.cos(dec)*np.cos(tandec)*np.cos(ra-tanra))
-            
-            #conversion for eta carried out
-            
-            eta = (np.sin(dec)*np.cos(tandec)-np.cos(dec)*np.sin(tandec)*np.cos(ra-tanra))/(np.sin(dec)*np.cos(tandec)+np.cos(dec)*np.sin(tandec)*np.cos(ra-tanra))
-            
-            #co-ordinates converted to degrees and set as attributes
-
-            return xi,eta
-        
-        def rotate_coords(xi,eta,theta):
-            
-            xi_rad=np.radians(xi.copy())
-            eta_rad=np.radians(eta.copy())
-            
-            alpha=eta_rad*np.sin(theta)+xi_rad * np.cos(theta)
-            beta=eta_rad * np.cos(theta)+ xi_rad * -np.sin(theta)
-            
-            alpha=np.degrees(alpha)
-            beta=np.degrees(beta)
-            
-            return np.array([alpha,beta])
         
         
         def outer_boundary(data,x,y):
@@ -1723,8 +1855,17 @@ class data_load:
             
             return boundary
             
+        if stars=='agb':
             
-        data=self.data
+            data=self.data
+            
+        elif stars=='m':
+            
+            data=self.mdata
+            
+        elif stars=='c':
+            
+            data=self.cdata
         
 
         
@@ -1751,7 +1892,7 @@ class data_load:
             tra=10.6742708
             tdec=40.8651694
         
-        m31xi,m31eta=eq_to_tan(m31ra,m31dec,tra,tdec)
+        m31xi,m31eta=self.eq_to_tan(m31ra,m31dec,tra,tdec)
         
 
         
@@ -1762,14 +1903,14 @@ class data_load:
         eta=data.eta.copy()
 
         #rotate
-        data['alpha']=rotate_coords(xi,eta,theta)[0]
-        data['beta']=rotate_coords(xi,eta,theta)[1]
+        data['alpha']=self.rotate_coords(xi,eta,theta)[0]
+        data['beta']=self.rotate_coords(xi,eta,theta)[1]
         
         m31xi=np.degrees(m31xi)
         m31eta=np.degrees(m31eta)
         
-        m31_alpha=rotate_coords(m31xi,m31eta,theta)[0]
-        m31_beta=rotate_coords(m31xi,m31eta,theta)[1]
+        m31_alpha=self.rotate_coords(m31xi,m31eta,theta)[0]
+        m31_beta=self.rotate_coords(m31xi,m31eta,theta)[1]
         
         print(m31_alpha)
         print(m31_beta)
@@ -1778,6 +1919,8 @@ class data_load:
         
             plt.plot(data.alpha,data.beta,marker=marker,markersize=markersize,linestyle='none',color=color)
             plt.gca().invert_xaxis()
+            plt.gca().set_ylabel(r'$\beta$')
+            plt.gca().set_xlabel(r'$\alpha$')
         
         corner1=np.array([np.min(data.xi),np.min(data.eta)])
         corner2=np.array([np.min(data.xi),np.max(data.eta)])
@@ -1788,7 +1931,7 @@ class data_load:
         corners_rot=[]
         for i in corners:
             
-            corners_rot.append(rotate_coords(i[0],i[1],theta))
+            corners_rot.append(self.rotate_coords(i[0],i[1],theta))
         
         
         
@@ -1817,8 +1960,9 @@ class data_load:
         mask=shapely.affinity.rotate(dE_ellipse,-theta_deg)
         x,y=mask.exterior.xy
         plt.plot(x,y)
-        
+        bin_shapes=[]
         while upper_bound-lower_bound > binwidth:
+            
         
             bin_slice_fill=box(upper_bound-binwidth,-1.0,upper_bound,1.0)
 
@@ -1835,10 +1979,11 @@ class data_load:
             corners=[swap0,swap1,swap2,swap3]
             bin_corners=MultiPoint([swap0,swap1,swap2,swap3])
             final_bin=Polygon(bin_corners)
+            bin_shapes.append(final_bin)
             x,y=final_bin.exterior.xy
             if show_figure==True:
                 
-                plt.plot(x,y)
+                plt.plot(x,y,color='orange')
 
             final_bin_area=final_bin.area
             
@@ -1868,6 +2013,8 @@ class data_load:
         bin_locs=np.array(bin_locs)
         bin_areas=np.array(bin_areas)
         
+        
+        
         bin_uncs=np.sqrt(bin_nums)
         
         bin_densities=(bin_nums/bin_areas)/3600
@@ -1877,17 +2024,50 @@ class data_load:
         bin_locs=bin_locs * 60
         
         m31_alpha=m31_alpha*60
-        print(m31_alpha)
+
         m31_bin_locs=bin_locs-m31_alpha
-        print(m31_bin_locs)
+
         background=pd.DataFrame({'bin_densities':bin_densities,'bin_uncs':bin_uncs,'bin_locs':bin_locs,'m31_bin_locs':m31_bin_locs})
         
         self.background=background
         
+        self.bin_shapes=bin_shapes
         #fit with Sersic profile
         
-        plt.errorbar(background.m31_bin_locs,background.bin_densities,yerr=background.bin_uncs,capsize=2,marker=marker,color=color)
+        #plt.errorbar(background.m31_bin_locs,background.bin_densities,yerr=background.bin_uncs,capsize=2,marker=marker,color=color)
         
+
+        
+    def fit_close_background(self,marker='o',markersize='3',color='black'):
+        
+        background=self.background.copy()
+        
+        xdata=-background.m31_bin_locs
+        
+        ydata=background.bin_densities
+        
+        yerr=background.bin_uncs
+        
+        model=Sersic1D(r_eff=2,n=10.00)
+            
+            
+        fit=fitting.LevMarLSQFitter()
+        
+        s=fit(model,xdata[2:],ydata[2:],weights=1/yerr[2:])
+        
+        plt.errorbar(xdata,background.bin_densities,yerr=background.bin_uncs,capsize=2,marker=marker,color=color)
+        
+        plt.plot(xdata,s(xdata))
+        
+        background['density_fit']=s(xdata)
+        
+        self.background=background
+        
+
+    
+    def read_background(self):
+        
+        self.background=pd.read_parquet('205_background')
         
         #plot graph in new coordinates
             
