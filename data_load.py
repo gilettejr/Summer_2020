@@ -65,11 +65,27 @@ class data_load:
         
         def CM_to_FEH(CM):
         
-            FEH=-1.39 -0.47*np.log10(CM)
+            FEH=-1.39 - 0.47*np.log10(CM)
         
             return(FEH)
             
         self.CM_to_FEH=CM_to_FEH
+        
+        def CM_to_FEH_unc(CM,deltaCM):
+            
+            deltalogCM=deltaCM/(CM*np.log(10))
+            
+            logCM=np.log10(CM)
+            
+            rhs=0.47 * logCM
+            
+            deltarhs= rhs * np.sqrt((deltalogCM/logCM)**2 + (0.1/0.47)**2)
+            
+            deltaFEH=np.sqrt(0.06**2+deltarhs**2)
+            
+            return deltaFEH
+            
+        self.CM_to_FEH_unc=CM_to_FEH_unc
 
         def linecut(frame,xdata,ydata,point1,point2):
         
@@ -1199,18 +1215,28 @@ class data_load:
         
         #method to construct elliptical slices and find [Fe/H] in each slices
         #takes semimajor axis of smallest ellipse and outside slice as inputs
-    def make_slices(self,stars='agb',a_width=0.03,outer_rad=0.3):
+    def make_slices(self,stars='agb',a_width=0.02,outer_rad=0.3):
         
         #read in AGB data together, and individual C and M catalogues
-
-        data=self.data
+        if stars=='agb':
+            data=self.data
+            
+        elif stars=='c':
+            
+            data=self.cdata
+            
+        elif stars=='m':
+            
+            data=self.mdata
+            
         self.a_width=a_width
         self.outer_rad=outer_rad
+        self.stars=stars
         
         #list of eccentricities of galaxies
-        eccentricities=[0.46,0.22,0.43,0]
+        eccentricities=[0.46,0.22,0.43,0.14]
         #list of rotation angles of galaxies
-        rotations=[34.2,45.9,169.2,0]
+        rotations=[34.2,45.9,169.2,157.9]
         
         for i in range(len(self.galaxies)):
             if self.galaxy==self.galaxies[i]:
@@ -1228,7 +1254,7 @@ class data_load:
         #fill slices with elliptical selections of decreasing size, from outer_rad to a_width
         for i in range(int((outer_rad*1000)/(a_width*1000))):
         
-            ellipse=check.select_ellipse(self.data,afl=outer_rad-(a_width * i),eccentricity=eccentricity,clockrot=rotation)
+            ellipse=check.select_ellipse(data,afl=outer_rad-(a_width * i),eccentricity=eccentricity,clockrot=rotation)
             slices.append(ellipse[0])
             areas.append(ellipse[1])
             ellipse_shapes.append(ellipse[2])
@@ -1287,7 +1313,7 @@ class data_load:
             
             
         
-    def FEH_slices(self):
+    def FEH_slices(self,m_background,c_background):
         
         #read in AGB data together, and individual C and M catalogues
         cdata=self.cdata
@@ -1295,6 +1321,8 @@ class data_load:
         slices=self.slices
         outer_rad=self.outer_rad
         a_width=self.a_width
+        
+        
         
         #list of eccentricities of galaxies
 
@@ -1365,14 +1393,66 @@ class data_load:
         
         cm=cnum/mnum
         
+        c_unc=np.sqrt(cnum)
+        m_unc=np.sqrt(mnum)
+        
+        back_num=c_background[2]/m_background[2]
+        
+        back_cm=c_background[0]/m_background[0]
+        
+        slice_all=cnum+mnum
+        
+        all_stars=np.sum(slice_all)
+        
+        weights=(slice_all/all_stars)
+        
+
+
+        
+        back_m_uncs=np.sqrt(m_background[2])
+        back_c_uncs=np.sqrt(c_background[2])
+        
+        back_cm_unc= back_cm * np.sqrt((back_m_uncs/m_unc)**2 + (back_c_uncs/c_unc)**2)
+        
+        
+        cm_slice_unc= cm * np.sqrt((c_unc/cnum)**2 + (m_unc/mnum)**2)
+        
+        cm_slice_unc= np.sqrt(cm_slice_unc**2 + back_cm_unc**2)
+        
+        cm=cm-(back_cm * (back_num/all_stars))
+        
+        avg_cm=np.average(cm,weights=weights)
+        
+        avg_cm_unc=np.sqrt(np.sum(cm_slice_unc**2))/len(cm_slice_unc)
+        
+        print(avg_cm)
+        
+        print(avg_cm_unc)
+
+        
+
+        
         #convert to [Fe/H]
         
-        FEH= self.CM_to_FEH(cm)
+        FEH = self.CM_to_FEH(cm)
+        
+        
+        FEH_unc=self.CM_to_FEH_uncs(cm,cm_slice_unc)
+        
+
+        
+        avgFEH=self.CM_to_FEH(avg_cm)
+        
+        avgFEH_unc=self.CM_to_FEH_uncs(avg_cm,avg_cm_unc)
+        
+        print(avgFEH)
+        
+        print(avgFEH_unc)
         
         #plot radial distribution
         
         xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=(outer_rad*1000)/(a_width*1000))
-        plt.plot(xdata,FEH,linestyle='none',marker='o',markersize='3',color='black')
+        plt.errorbar(xdata,FEH,yerr=FEH_unc,capsize=2,linestyle='none',marker='o',markersize='3',color='black')
         m,b=np.polyfit(xdata,FEH,1)
         plt.plot(xdata, m*xdata + b,color='red')
         plt.xlabel('a/deg')
@@ -1481,7 +1561,19 @@ class data_load:
         slice_shapes=self.slice_shapes
         background=self.background
         rotate_coords=self.rotate_coords
-        data=self.data
+        stars=self.stars
+        if stars=='agb':
+            
+            data=self.data
+        elif stars=='m':
+            
+            
+            data=self.mdata
+            
+        elif stars=='c':
+            
+            data=self.cdata
+            
         areas=self.areas
         slices=self.slices
         bin_shapes=self.bin_shapes
@@ -1567,7 +1659,7 @@ class data_load:
             weightings=slice_bin_areas/slice_shapes_rot[i].area
             
             avg_density=np.average(slice_bin_densities,weights=weightings)
-            density_err=np.sqrt(np.sum(np.square(slice_bin_densities_uncs)))
+            density_err=(np.sqrt(np.sum(np.square(slice_bin_densities_uncs))))/len(slice_bin_densities)
             new_density.append(avg_density)
             new_uncs.append(density_err)
 
@@ -1580,17 +1672,99 @@ class data_load:
             
         fig=plt.figure()
         
-        density_distribution=pd.DataFrame({'a':xdata,'density':ydata,'density_err':yerr})
+
         
-        density_distribution.to_parquet('205_radial_density')
+        density_distribution=pd.DataFrame({'a':xdata,'density':ydata,'density_err':yerr,'slice_area_deg':areas,'slice_nums':slice_nums})
+        
+
+            
+        outfilename=self.galaxy+'_radial_density_' + stars
+        
+        density_distribution.to_parquet(outfilename)
             
         plt.errorbar(xdata,ydata,yerr=yerr,linestyle='none',capsize=2,marker='o',color='black')
             
-                    
-            
-    def fit_close_profiles(self,crowding_num=2):
+    def close_FEH_slices(self):
         
-        distribution=pd.read_parquet('205_radial_density')
+        if self.galaxy=='ngc205':
+            
+            cut=5
+            
+        elif self.galaxy=='m32':
+            
+            cut=3
+        
+        c_slice_dataframe=pd.read_parquet(self.galaxy + '_radial_density_c')
+        
+        m_slice_dataframe=pd.read_parquet(self.galaxy +'_radial_density_m')
+        
+        full_slice_nums=c_slice_dataframe.slice_nums + m_slice_dataframe.slice_nums
+        
+        total_star_num=np.sum(full_slice_nums)
+
+        slice_a=c_slice_dataframe.a
+        
+        c_slice_dataframe
+        
+        cm_slices=c_slice_dataframe.density/m_slice_dataframe.density
+        print(m_slice_dataframe.density)
+        print(c_slice_dataframe.density)
+
+
+
+        cm_slices_uncs=cm_slices*np.sqrt((c_slice_dataframe.density_err/c_slice_dataframe.density)**2 + (m_slice_dataframe.density_err/m_slice_dataframe.density)**2)
+
+        FEH_slices=self.CM_to_FEH(cm_slices)
+        #print(cm_slices)
+        #print(cm_slices_uncs)
+        FEH_slice_uncs=self.CM_to_FEH_uncs(cm_slices,cm_slices_uncs)
+
+        
+        plt.errorbar(slice_a,FEH_slices,marker='o',linestyle='none',color='black',capsize=2,yerr=FEH_slice_uncs)
+        plt.ylabel('[Fe/H]')
+        plt.xlabel('Semi-major axis (arcmins)')
+        
+        weights=full_slice_nums[cut:]/total_star_num
+
+        
+        
+        
+        
+
+        
+        new_cm_slices=[]
+        new_cm_slices_uncs=[]
+        new_weights=[]
+        for i in range(len(cm_slices)):
+            
+            if m_slice_dataframe.density[i]<0 or c_slice_dataframe.density[i]<0:
+                
+                continue
+            
+            else:
+                
+                new_cm_slices.append(cm_slices[i])
+                new_cm_slices_uncs.append(cm_slices_uncs[i])
+                new_weights.append(weights[i])
+
+        avg_CM=np.average(new_cm_slices,weights=new_weights)        
+        avg_CM_unc=np.sqrt(np.sum(np.square(new_cm_slices_uncs)))/len(new_cm_slices_uncs)
+        
+        FEH_avg=self.CM_to_FEH(avg_CM)
+        
+        FEH_avg_unc=self.CM_to_FEH_uncs(avg_CM,avg_CM_unc)
+        print(avg_CM)
+        print(avg_CM_unc)
+        print(FEH_avg)
+        print(FEH_avg_unc)
+        
+    
+        
+        
+            
+    def fit_close_profiles(self,crowding_num=1):
+        stars='agb'
+        distribution=pd.read_parquet(self.galaxy + '_radial_density_' + stars)
         
         xdata=distribution.a
         ydata=distribution.density
@@ -1705,10 +1879,22 @@ class data_load:
         
         #calculate C/M, FEH
         
-    def find_background_density_border(self,marker='o',markersize='1',color='black',borderwidth=0.07,show_figure=False):
-        data=self.data
+    def find_background_density_border(self,stars='agb',marker='o',markersize='1',color='black',borderwidth=0.07,show_figure=False):
+        
+        if stars=='agb':
+            
+            data=self.data
+            
+        elif stars=='m':
+            
+            data=self.mdata
+            
+        elif stars =='c':
+            
+            data=self.cdata
+        
         border_data=data.copy()
-        corner_locs=self.data_corners(data)
+        corner_locs=self.data_corners(self.data)
         
         for i in corner_locs:
             
@@ -1761,7 +1947,8 @@ class data_load:
             
          
             
-        return np.array([border_num,border_err])/border_area
+        return np.array([border_num/border_area,border_err/border_area,border_num]) 
+    
     def find_background_density_boxes(self,marker='o',markersize='1',color='black',boxsize=0.2,show_figure=False):
         
         data=self.data
@@ -1828,9 +2015,13 @@ class data_load:
         
         return corner_p
     
-    def find_background_grad(self,stars='agb',ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
-
+    def find_background_grad(self,ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
         
+        if self.galaxy=='m32':
+            
+            ellipticity=0.14
+            clockrot=157.9
+            ellipse_a=0.1
         
         def outer_boundary(data,x,y):
             
@@ -1854,7 +2045,9 @@ class data_load:
             boundary=LinearRing([corner1,corner2,corner3,corner4])
             
             return boundary
-            
+        
+        stars=self.stars
+        
         if stars=='agb':
             
             data=self.data
@@ -1899,6 +2092,8 @@ class data_load:
         #find angle of rotation
         theta=np.arctan((m31eta)/(m31xi))
         
+        print(theta)
+        
         xi=data.xi.copy()
         eta=data.eta.copy()
 
@@ -1911,9 +2106,7 @@ class data_load:
         
         m31_alpha=self.rotate_coords(m31xi,m31eta,theta)[0]
         m31_beta=self.rotate_coords(m31xi,m31eta,theta)[1]
-        
-        print(m31_alpha)
-        print(m31_beta)
+
         
         if show_figure==True:
         
@@ -1943,6 +2136,9 @@ class data_load:
         
         upper_bound=np.max(corners_x)-binwidth
         lower_bound=np.min(corners_x)
+        
+        print(upper_bound)
+        print(lower_bound)
     
         
         #make bins
@@ -1959,7 +2155,7 @@ class data_load:
         theta_deg=np.degrees(theta)
         mask=shapely.affinity.rotate(dE_ellipse,-theta_deg)
         x,y=mask.exterior.xy
-        plt.plot(x,y)
+
         bin_shapes=[]
         while upper_bound-lower_bound > binwidth:
             
@@ -2002,12 +2198,16 @@ class data_load:
             if bin_slice_fill.intersects(mask)==True:
                 
                 overlap_area=mask.intersection(bin_slice_fill).area
-                print(overlap_area)
+
                 final_bin_area=final_bin_area-overlap_area
             
             bin_locs.append(upper_bound-(binwidth/2))
             bin_areas.append(final_bin_area)
             upper_bound=upper_bound-binwidth
+            
+            if self.galaxy=='m32' and upper_bound-lower_bound < (binwidth * 2):
+                
+                break
             
         bin_nums=np.array(bin_nums)
         bin_locs=np.array(bin_locs)
@@ -2030,6 +2230,7 @@ class data_load:
         background=pd.DataFrame({'bin_densities':bin_densities,'bin_uncs':bin_uncs,'bin_locs':bin_locs,'m31_bin_locs':m31_bin_locs})
         
         self.background=background
+        background.to_parquet('205_c_tests')
         
         self.bin_shapes=bin_shapes
         #fit with Sersic profile
@@ -2040,7 +2241,13 @@ class data_load:
         
     def fit_close_background(self,marker='o',markersize='3',color='black'):
         
-        background=self.background.copy()
+        #background=pd.read_parquet('205_c_tests')
+    
+        
+        #stars='agb'
+        
+        background =self.background.copy()
+        
         
         xdata=-background.m31_bin_locs
         
@@ -2048,20 +2255,41 @@ class data_load:
         
         yerr=background.bin_uncs
         
+
+        
         model=Sersic1D(r_eff=2,n=10.00)
             
             
         fit=fitting.LevMarLSQFitter()
         
-        s=fit(model,xdata[2:],ydata[2:],weights=1/yerr[2:])
+        if self.galaxy=='ngc205' and self.stars=='c':
+            
+
+            model=Sersic1D(r_eff=10,n=20)
+            s=fit(model,xdata[2:],ydata[2:])
+            
+            
+        elif self.galaxy=='m32' and self.stars=='c':
+            model=Sersic1D(r_eff=20,n=10)
+            s=fit(model,xdata[3:],ydata[3:])
+        elif self.galaxy=='m32':
+            
+            model=Sersic1D(r_eff=20,n=2)
+            s=fit(model,xdata[3:],ydata[3:],weights=1/yerr[3:])
         
-        plt.errorbar(xdata,background.bin_densities,yerr=background.bin_uncs,capsize=2,marker=marker,color=color)
+        else:
+            
+            s=fit(model,xdata[2:],ydata[2:],weights=1/yerr[2:])
+        
+        plt.errorbar(xdata,ydata,yerr=yerr,capsize=2,marker=marker,color=color)
         
         plt.plot(xdata,s(xdata))
         
         background['density_fit']=s(xdata)
         
         self.background=background
+        
+        print(background)
         
 
     
