@@ -51,7 +51,7 @@ class data_load:
     #reads in and performs initial cuts on data from chosen galaxy
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
-    def __init__(self,galaxy, CLS=True,CLS_mags='all', mag=True, ext=True, path_to_file='initial_data/'):
+    def __init__(self,galaxy, CLS=True,CLS_mags='norm', mag=True, ext=True, path_to_file='initial_data/'):
         
         def data_corners(data):
             
@@ -262,9 +262,16 @@ class data_load:
                 
 
                 #standard cls cuts made for the rest
+                    nines=[]
                     for i in range(len(frame.jcis)):
+
+                        if frame.kcis[i]==-9.0 or frame.jcis[i]==-9.0 or frame.hcis[i]==-9.0:
+                            nines.append(0)
+                        
                         if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
                             frame.loc[i]=np.nan
+                print(len(nines))
+                print(len(frame.dropna()))
             #different combinations of cls cuts included below
             #can be used to test effect of different cls cuts
 
@@ -1313,7 +1320,7 @@ class data_load:
             
             
         
-    def FEH_slices(self,m_background,c_background):
+    def FEH_slices(self,m_background,c_background,crowding_num):
         
         #read in AGB data together, and individual C and M catalogues
         cdata=self.cdata
@@ -1421,7 +1428,7 @@ class data_load:
         
         cm=cm-(back_cm * (back_num/all_stars))
         
-        avg_cm=np.average(cm,weights=weights)
+        avg_cm=np.average(cm[:(len(cm)-crowding_num)],weights=weights[:(len(cm)-crowding_num)])
         
         avg_cm_unc=np.sqrt(np.sum(cm_slice_unc**2))/len(cm_slice_unc)
         
@@ -1452,11 +1459,14 @@ class data_load:
         #plot radial distribution
         
         xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=(outer_rad*1000)/(a_width*1000))
-        plt.errorbar(xdata,FEH,yerr=FEH_unc,capsize=2,linestyle='none',marker='o',markersize='3',color='black')
+        #plt.errorbar(xdata,FEH,yerr=FEH_unc,capsize=2,linestyle='none',marker='o',markersize='3',color='black')
         m,b=np.polyfit(xdata,FEH,1)
-        plt.plot(xdata, m*xdata + b,color='red')
-        plt.xlabel('a/deg')
-        plt.ylabel('[Fe/H]')
+        #plt.plot(xdata, m*xdata + b,color='red')
+        
+        return xdata, FEH, FEH_unc, avgFEH,avgFEH_unc
+        
+        #plt.xlabel('a/deg')
+        #plt.ylabel('[Fe/H]')
 
 
         
@@ -1500,13 +1510,15 @@ class data_load:
         yerr=slice_star_densities_uncs
 
         
-        plt.errorbar(xdata,ydata,yerr=yerr,linestyle='none',marker='o',markersize=5,capsize=2,color='black',label='AGB data')
-        plt.xlabel('Semi-major axis/arcmins')
-        plt.ylabel('Nstars/arcmins$^2$')
+        #plt.errorbar(xdata,ydata,yerr=yerr,linestyle='none',marker='o',markersize=5,capsize=2,color='black',label='AGB data')
+        #plt.xlabel('Semi-major axis/arcmins')
+        #plt.ylabel('Nstars/arcmins$^2$')
         
         #n147 params
         
         xdata_orig=xdata
+        ydata_orig=ydata
+        yerr_orig=yerr
             
         xdata=xdata[:len(xdata)-(crowding_num)]
         ydata=ydata[:len(ydata)-(crowding_num)]
@@ -1540,14 +1552,16 @@ class data_load:
         
         xdata=np.linspace(min(xdata_orig),max(xdata_orig),1000)
         
-        plt.plot(xdata,s(xdata),label='Sersic Fit with r$_{eff}$ = ' + str(round(s.r_eff.value,3)) + ', n = ' + str(round(s.n.value,3)))
-        plt.legend()
+        #plt.plot(xdata,s(xdata),label='Sersic Fit with r$_{eff}$ = ' + str(round(s.r_eff.value,3)) + ', n = ' + str(round(s.n.value,3)))
+        
+        #plt.legend()
         print(s)
-        a=s.r_eff
-        n=ellipticity
+        self.r_eff=s.r_eff.value
+        self.n=s.n.value
         
+        return xdata_orig,ydata_orig,yerr_orig,xdata,s(xdata)
         
-        plt.yscale('log')
+        #plt.yscale('log')
         #r_eff=a*(1-n/3)
         
         #print('r_eff = ' + str(r_eff)+ ' arcmins')
@@ -2367,7 +2381,7 @@ class data_load:
         ells=[]
         
         for i in range(len(majors)):
-            ells.append(Ellipse(xy=[0,0],height=majors[i]*2,width=minors[i]*2,angle=360-PA,facecolor='none',edgecolor='red',linestyle='--',linewidth=2))
+            ells.append(Ellipse(xy=[0,0],height=majors[i]*2,width=minors[i]*2,angle=360-PA,facecolor='none',edgecolor='red',linestyle='--',linewidth=1))
             
         plt.rc('axes',labelsize=20)
         fig,ax=plt.subplots()

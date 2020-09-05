@@ -134,4 +134,3 @@ class cuts_all:
         #plt.tight_layout()
         plt.savefig('report_images/147cc_cuts.pdf')
     #def plot_cmd_cc(self):
-        
