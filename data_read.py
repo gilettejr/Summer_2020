@@ -1,4 +1,4 @@
-from data_load import data_load
+from data_load import data_loader
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,7 @@ from scipy.signal import savgol_filter
 
 #class inherits all methods from data_loads, but takes data from defined binary file rather than loading from raw data
 
-class data_read(data_load):
+class data_reader(data_loader):
     #load in data from appropriate file depending on stage argument and galaxy
     def __init__(self,stage='cm',galaxy='ngc147'):
         
