@@ -3,6 +3,7 @@ from data_read import data_reader
 from crossmatch_stilts import crossmatch
 from edge_detectors import edge_detectors
 
+
 import numpy as np
 import os
 
@@ -104,7 +105,7 @@ class bookkeeping:
             except:
                 os.system('mkdir processed_data/fore_cut_data')
                 galaxy_object.save_to_parquet('processed_data/fore_cut_data/' + galaxy_object.galaxy)
-            galaxy_object.trgbcut()
+            galaxy_object.do_trgbcut()
             try:
                 galaxy_object.save_to_parquet('processed_data/agb_data/' + galaxy_object.galaxy)
             except:
@@ -135,7 +136,7 @@ class bookkeeping:
                 os.system('mkdir processed_data/m_agb_data')
                 os.system('mkdir processed_data/c_agb_data')
                 galaxy_object.save_to_parquet('processed_data/agb_crossed_data/' + galaxy_object.galaxy)
-            galaxy_object.CM_cut()
+            galaxy_object.do_CM_cut()
             galaxy_object.cm_save_to_parquet('processed_data/m_agb_data/' + galaxy_object.galaxy,'processed_data/c_agb_data/' + galaxy_object.galaxy)
         
             

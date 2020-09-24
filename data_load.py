@@ -200,7 +200,7 @@ class data_loader:
         
     
     #remove bluer foreground data above a specified blue limit
-    def forecut(self):
+    def do_forecut(self):
     
     #create copy to hold cut data for completeness
     
@@ -259,7 +259,7 @@ class data_loader:
 
     #method to cut all data below a certain defined magnitude
 
-    def trgbcut(self):
+    def do_trgbcut(self):
         
         #similar process as in forecut
         #set attributes to variables, for holding data with rgb stars removed
@@ -323,7 +323,7 @@ class data_loader:
     #separate AGB stars into C-AGB and M-AGB using 2 colour cuts
     #takes cuts from lists inside method, or optional arguments when
     #method is called
-    def CM_cut(self):
+    def do_CM_cut(self):
         
         #variables set
         
