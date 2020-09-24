@@ -15,7 +15,7 @@ from astropy.modeling import fitting
 from astropy.modeling.models import Sersic1D
 
 #extinction correction package
-from dustmaps.sfd import SFDQuery
+
 
 #curve fitting imports
 from scipy.stats import gaussian_kde,norm
@@ -52,7 +52,7 @@ class data_loader:
     #reads in and performs initial cuts on data from chosen galaxy
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
-    def __init__(self,galaxy, CLS=True,CLS_mags='norm', mag=True, ext=True, path_to_file='initial_data/'):
+    def __init__(self,galaxy, CLS=True,cls_bands='norm', mag=True, ext=True, path_to_file='initial_data/'):
         
         def data_corners(data):
             
@@ -87,28 +87,6 @@ class data_loader:
             return deltaFEH
             
         self.CM_to_FEH_unc=CM_to_FEH_unc
-
-        def linecut(galaxy_data,xdata,ydata,point1,point2):
-        
-            upper=galaxy_data.copy()
-            lower=galaxy_data.copy()
-            
-            m=(point2[1]-point1[1])/(point2[0]-point1[0])
-            
-            c=point1[1]-point1[0] * m
-            
-            for i in galaxy_data.index:
-                
-                if ydata[i] > m * xdata[i] + c:
-                    
-                    lower.loc[i]=np.nan
-                    
-                else:
-                    
-                    upper.loc[i]=np.nan
-            
-            return([upper,lower])
-        
 
         #convert hhmmss ra and ddmmss dec into decimal values
         
@@ -196,7 +174,7 @@ class data_loader:
             
             
             #cls cut carried out, NaN values purged
-            startup_processor.CLS_cut(bands=CLS_mags)
+            startup_processor.CLS_cut(cls_bands=cls_bands)
             galaxy_data=galaxy_data.dropna()
             print(str(len(galaxy_data)) + ' sources retained after CLS cut')
         if mag==True:
@@ -222,10 +200,10 @@ class data_loader:
         
     
     #remove bluer foreground data above a specified blue limit
-    def forecut(self,cut=0):
-        
-        #create copy to hold cut data for completeness
-        
+    def do_forecut(self):
+    
+    #create copy to hold cut data for completeness
+    
         foredata=self.data.copy()
         
         #set class attribute for frame holding data to variable for ease
@@ -240,22 +218,14 @@ class data_loader:
         #j-k CMD
         
         forecuts=[0.992,0.964,1.00,0.92,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,1.002,]
-        foresigs=[0.103,0.079,0.085,0.01]
         #loop through galaxies to match galaxy with foreground cut
-        
-        if cut==0:
             
         
-            for i in range(len(forecuts)):
-                
-                if self.galaxy==galaxies[i]:
-                    cut=forecuts[i]
-                    break
+        for i in range(len(forecuts)):
             
-        else:
-            
-            cut=cut
-        
+            if self.galaxy==galaxies[i]:
+                cut=forecuts[i]
+                break
         #j-k colour defined for data
         
         jk=data.jmag-data.kmag
@@ -286,60 +256,10 @@ class data_loader:
         
         self.foredata=foredata
         self.data=data
-        
-    def forecut_slant(self,slant_m='+'):
-        
-        #create copy to hold cut data for completeness
-        
-        foredata=self.data.copy()
-        
-        #set class attribute for frame holding data to variable for ease
-        
-        data=self.data
-        jk=data.jmag-data.kmag
-        k=data.kmag
-        
-        #set galaxy name list to variable for matching between cut and galaxy
-        
-        galaxies=self.galaxies
-        
-        #cuts for each galaxy placed in list. Defined from inspection of
-        #j-k CMD
-        
-        oneforecuts=[(0.95,17.9),(0.71,18.35),(0,0),(0,0)]
-        twoforecuts=[(0.99,17.0),(0,0),(0,0),(0,0)]
-        
-        #loop through galaxies to match galaxy with foreground cut
-        
-        for i in range(len(oneforecuts)):
-            
-            if self.galaxy==galaxies[i]:
-                cut1=oneforecuts[i]
-                cut2=twoforecuts[i]
-                break
-        
-        result=self.linecut(data,jk,k,cut1,cut2)
-        
-        if slant_m=='+':
-            foredata=result[1]
-            data=result[0]
-            
-        elif slant_m=='-':
-            foredata=result[0]
-            data=result[1]
-        else:
-            print('Gradient argument incorrect in forecut_slant method')
-            
-        
-        
-        #set foreground dataframe as attribute so it can be accessed
-        
-        self.foredata=foredata.dropna()
-        self.data=data.dropna()
 
     #method to cut all data below a certain defined magnitude
 
-    def trgbcut(self,cut=0):
+    def do_trgbcut(self):
         
         #similar process as in forecut
         #set attributes to variables, for holding data with rgb stars removed
@@ -349,14 +269,8 @@ class data_loader:
         rgbdata=self.data.copy()
         
         #cuts defined from running trgbtip on foreground removed data
-        
 
-        
         trgbcuts=[18.137,17.862,17.930,17.8,17.8,18.27,18.05,18.43,18.41,18.27,18.27,18.77,18.38,17.92,18.52,19.65,18.75,18.66]
-        trgbsigs=[0.141,0.110,0.066,0.67]
-            
- 
-
         
         #galaxies attribute used to match galaxy to associated trgb cut
         
@@ -364,17 +278,13 @@ class data_loader:
         #by default, uses trgb cut coded into the trgbcuts list
         #optionally allows cut to be included as argument when method is run
         #in which case it will make that cut instead
-        if cut==0:        
-            for i in range(len(galaxies)):
-                
-                if self.galaxy==galaxies[i]:
-                    
-                    cut=trgbcuts[i]
-                    break
-                
-        else:
+      
+        for i in range(len(galaxies)):
             
-            cut=cut        
+            if self.galaxy==galaxies[i]:
+                
+                cut=trgbcuts[i]
+                break
         #make cut on main data attribute, convert rgbdata to frame holding only
         #cut data (rgb stars)        
         
@@ -383,13 +293,12 @@ class data_loader:
             if data.kmag[i] > cut:
                 
                 data.loc[i]=np.nan
-                
+        
             else:
                 
                 rgbdata.loc[i]=np.nan
                 
         #% decrease in sources from cuts printed, NaN values purged
-                
         k=len(data.copy())
 
         data=data.dropna()
@@ -414,7 +323,7 @@ class data_loader:
     #separate AGB stars into C-AGB and M-AGB using 2 colour cuts
     #takes cuts from lists inside method, or optional arguments when
     #method is called
-    def CM_cut(self,hkcut=0,jhcut=0):
+    def do_CM_cut(self):
         
         #variables set
         
@@ -428,27 +337,21 @@ class data_loader:
         #jhcuts=[0.82,0.82,0.77,0.93]
         
         hkcuts=[0.337,0.323,0.407,0.477,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        hksigs=[0.047,0.052,0.034,0]
         jhcuts=[0.883,0.857,0.930,0.913,0.91,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        jhsigs=[0.046,0.042,0.049,0]
         
         #match galaxy to cut, or make cut from argument if used
         
-        if hkcut == 0 or jhcut == 0:
+
         
-            for i in range(len(self.galaxies)):
-                
-                if self.galaxies[i]==self.galaxy:
-                    
-                    hkcut=hkcuts[i]
-                    jhcut=jhcuts[i]
-                    
-                    break
-                
-        else:
+        for i in range(len(self.galaxies)):
             
-            hkcut=hkcut
-            jhcut=jhcut
+            if self.galaxies[i]==self.galaxy:
+                
+                hkcut=hkcuts[i]
+                jhcut=jhcuts[i]
+                
+                break
+
             
             
         
@@ -484,312 +387,17 @@ class data_loader:
     
     #REDUNDANT
     #could be useful for some more awkward cutting techniques
-    def CM_cut_slant(self,slant_m='-'):
-        
-        #create copy to hold cut data for completeness
-        
-        mdata=self.data.copy()
-        
-        #set class attribute for frame holding data to variable for ease
-        
-        cdata=self.data.copy()
-        data=self.data.copy()
-        jh=data.jmag-data.hmag
-        hk=data.hmag-data.kmag
-        
-        #set galaxy name list to variable for matching between cut and galaxy
-        
-        galaxies=self.galaxies
-        
-        #cuts for each galaxy placed in list. Defined from inspection of
-        #j-k CMD
-        
-        oneforecuts=[(1.09,0.13),(0,0),(0,0),(0,0)]
-        twoforecuts=[(0.78,0.48),(0,0),(0,0),(0,0)]
-        
-        #loop through galaxies to match galaxy with foreground cut
-        
-        for i in range(len(oneforecuts)):
-            
-            if self.galaxy==galaxies[i]:
-                cut1=oneforecuts[i]
-                cut2=twoforecuts[i]
-                break
-        
-        result=self.linecut(data,jh,hk,cut1,cut2)
-        
-        if slant_m=='+':
-            mdata=result[0]
-            cdata=result[1]
-            
-        elif slant_m=='-':
-            mdata=result[1]
-            cdata=result[0]
-        else:
-            print('Gradient argument incorrect in forecut_slant method')
-            
-        
-        
-        #set foreground dataframe as attribute so it can be accessed
-        
-        self.mdata=mdata.dropna()
-        self.cdata=cdata.dropna()
-    #separate C and M stars based on defined triangle in 2D colour space
-    #REDUNDANT
-    def CM_polygon_cut(self):
-        
-        #create copies for holding separated data
-        
-        data=self.data
-        mdata=self.data.copy()
-        cdata=self.data.copy()
-        
-        #define triangle holding C-stars for each galaxy
-        
-        vertex1s=[(0.75,0.53),(0,0),(0,0),(0,0)]
-        vertex2s=[(1.06,0.21),(0,0),(0,0),(0,0)]
-        vertex3s=[(2.25,1.31),(0,0),(0,0),(0,0)]
-        vertex4s=[(2.25,2.25),(0,0),(0,0),(0,0)]
-        vertex5s=[(1.65,2.25),(0,0),(0,0),(0,0)]
-        
-        
-        #match galaxy to appropriate triangle
-        
-        for i in range(len(self.galaxies)):
-            
-            if self.galaxies[i]==self.galaxy:
-                
-                vertex1=vertex1s[i]
-                vertex2=vertex2s[i]
-                vertex3=vertex3s[i]
-                vertex4=vertex4s[i]
-                vertex5=vertex5s[i]
-                    
-                break
-        
-        #colours defined
-        
-        hk=data.hmag-data.kmag
-        
-        jh=data.jmag-data.hmag
-        
-        #create triangle between 3 defined vertices surrounding C-stars
-        
-        carea=Polygon([vertex1,vertex2,vertex3,vertex4,vertex5])
-        
-        #loop through data, allocate data inside triangle to cdata dataframe
-        #remainder held in mdata dataframe
-        
-        for i in data.index:
-            
-            if carea.contains(Point(jh[i],hk[i])):
-                
-                mdata.loc[i]=np.nan
-                
-            else:
-                
-                cdata.loc[i]=np.nan
-                
-        #wipe NaN values, set data to class attributes
-        
-        mdata=mdata.dropna()
-        cdata=cdata.dropna()
-        
-        self.mdata=mdata
-        self.cdata=cdata
-    
-    #graphing method for plotting j-k cmds
-    
-    def plot_kj_cmd(self,stars='all',marker='o',markersize=1,color='black',newfig=False):
-        
-        #conditional statements plot only c,m, or both sets depending on 
-        #optional stars argument
-        
-        if stars=='c':
-            
-            data=self.cdata
-            
-        elif stars=='m':
-            
-            data=self.mdata
-        
-        elif stars=='c+m' :
-        
-            data=self.mdata.append(self.cdata)
-            
-        else:
-            
-            data=self.data
-            
-        
-        
-        #axes, figure set, CMD plotted
-        
-        if newfig==True: 
-        
-            plt.figure()        
-        plt.rc('axes',labelsize = 15)
-        plt.plot(data.jmag - data.kmag,data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
-        if color!='red':
-            plt.gca().invert_yaxis()
-        plt.ylabel('$K_0$')
-        plt.xlabel('$J_0$-$K_0$')
+
     
     #same as above method, but with h-k on x axis
-    def plot_hk_cmd(self,stars='all',marker='o',markersize=1,color='blue'):
-        
-        #conditional statements plot only c,m, or both sets depending on 
-        #optional stars argument
-        
-        if stars=='c':
-            
-            data=self.cdata
-            
-        elif stars=='m':
-            
-            data=self.mdata
-        
-        elif stars=='c+m' :
-        
-            data=self.mdata.append(self.cdata)
-            
-        else:
-            
-            data=self.data
-            
-        
-        
-        #axes, figure set, CMD plotted
-
-        #plt.figure()        
-        plt.rc('axes',labelsize = 15)
-        plt.plot(data.hmag - data.kmag,data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
-        if color!='red':
-            plt.gca().invert_yaxis()
-        plt.ylabel('$K_0$')
-        plt.xlabel('$H_0$-$K_0$')
     
-    #graphing method for plotting h-k/j-h 2CD
-    
-    def plot_cc(self,stars='all',marker='o',markersize=1,color='black',newfig=False):
-        
-        #stars argument works in same way as plot_kj_cmd
-        
-        if stars=='c':
-            
-            data=self.cdata
-            
-        elif stars=='m':
-            
-            data=self.mdata
-        
-        elif stars=='c+m' :
-        
-            data=self.mdata.append(self.cdata)
-            
-        else:
-            
-            data=self.data
-            
-        
-        #axes, figure set, data plotted
-        
-        if newfig==True:
-        
-            plt.figure()        
-        plt.rc('axes',labelsize = 15)
-        plt.plot(data.jmag - data.hmag,data.hmag-data.kmag,linestyle='none',markersize=markersize,marker=marker,color=color)
-
-        plt.ylabel('$H_0$-$K_0$')
-        plt.xlabel('$J_0$-$H_0$')
-        
     
     #graphing method for plotting spatial distributions
     #can plot m, c, all agb stars, or m and c on separate subplots
-    def plot_spatial(self,stars='all',marker='o',markersize=1,color='black'):
-    #conditional statement based on stars defines data appropriately
-        if stars=='c':
-            
-            data=self.cdata
-            
-        elif stars=='m':
-            
-            data=self.mdata
-        
-        elif stars=='c+m' :
-        
-            mdata=self.mdata
-            cdata=self.cdata
-            
-        else:
-            
-            data=self.data
-        
-        #if c+m cnot chosen for stars argument, data plotted in single plot
-        
-        if stars !='c+m':
-        
-            plt.rc('axes',labelsize=20)
-            plt.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color=color)
-            plt.gca().set_ylabel(r'$\eta$')
-            plt.gca().set_xlabel(r'$\xi$')
-            
-            if color!='red':
-                plt.gca().invert_xaxis()
-                    
-                plt.show()
-        
-        
-        #if c+m chosen for stars argument, plot c and m stars in subplots
-        else:
-            
-            #shared axes for clarity and ease of comparison
-            
-            fig,axs=plt.subplots(2,1,sharex=True,sharey=True)
-            
-            plt.rc('axes',labelsize=20)
 
-            
-            axs[0].plot(mdata.xi,mdata.eta,linestyle='none',marker=marker,markersize=markersize,color='blue')
-            axs[1].plot(cdata.xi,cdata.eta,linestyle='none',marker=marker,markersize=markersize,color='red')
-            
-            axs[0].set_ylabel(r'$\eta$')
-            axs[1].set_ylabel(r'$\eta$')
-            
-            axs[1].set_xlabel(r'$\xi$')
-            
-            axs[0].set_title('M-AGB')
-            axs[1].set_title('C-AGB')
-            
-            axs[0].invert_xaxis()
-            axs[1].invert_xaxis()
     
     #plot contour map of stars
-    def plot_contour(self,overlay=False):
-        
-        #set graphing visuals
-        
-        sns.set_context('paper')
-        
-        params={'legend.fontsize':'12','axes.labelsize':'18',
-        'axes.titlesize':'14','xtick.labelsize':'12',
-        'ytick.labelsize':'12','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
-        plt.rcParams.update(params)
-        plt.rcParams.update({'figure.max_open_warning': 0})
-        
-        #read in dataframe
-        data=self.data
-        #make plot
-        sns.kdeplot(data.xi,data.eta,levels=np.logspace(-1,1,50))
-        #don't reinvert x axis and relabel if being used as an overlay
-        if overlay==False:
-            
-            
-            
-            plt.ylabel(r'$\eta$')
-            plt.xlabel(r'$\xi$')
-            plt.gca().invert_xaxis()
-        
+
         
         
         
@@ -797,19 +405,7 @@ class data_loader:
     #basically redundant method for finding trgb
     #far less elegant and robust than trgbfind
     
-    def plot_lum(self):
-        
-        data=self.data
-        
-        lum_func=data.kmag
-        
-        plt.figure()
-        
 
-        sns.kdeplot(lum_func.dropna(),color='black')
-        
-        plt.xlabel('$K_0$')
-        plt.gca().invert_xaxis()
     
 
     

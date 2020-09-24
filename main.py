@@ -7,12 +7,10 @@ Created on Sat Sep 28 15:14:03 2019
 """
 from sat_graphers import sat
 #from runners import run_both,run_rgb,run_cross,kde_separator
-from graphing_class import basic_graphs,graphs
-from crossmatching_utils import topcatstuff
 #from iso_utils import import_isos
-from designations import ratio_utils
-from data_load import data_load
-from data_read import data_read
+#from designations import ratio_utils
+from data_load import data_loader
+from data_read import data_reader
 from data_readall import data_readall
 from cuts import cuts
 from cuts_all import cuts_all
@@ -25,6 +23,7 @@ from selection_utils import selection_utils
 #from stack import stack
 from HESSCMD import plotHess
 from sersic_graphs import radial_graphs
+from reload_all_data import reload_all_data
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -42,8 +41,7 @@ import matplotlib.pyplot as plt
 
 def main():
     
-    e=bookkeeping()
-    e.update()
+    reload_all_data()
     
     #e.make_slices(outer_rad=0.4)
     #e.overplot_ellipses(0.46,0.02,0.4,34.2)

@@ -1,5 +1,9 @@
 import numpy as np
 
+from astropy.coordinates import SkyCoord
+
+from dustmaps.sfd import SFDQuery
+
 class initial_processes:
     
     def __init__(self,galaxy_object):
@@ -11,7 +15,7 @@ class initial_processes:
             
             return galaxy_data,galaxy_name
         
-        self.galaxy_data=galaxy_object.data
+        self.galaxy_data=galaxy_object.galaxy_data
         self.galaxy_name=galaxy_object.galaxy
         
         self.get_data_and_name_attributes=get_data_and_name_attributes
@@ -169,7 +173,7 @@ class initial_processes:
             #function to cut data with large magnitude error
     #takes datagalaxy_data as input, only used internally in this class
     
-    def mag_err_cut(self,magerr):
+    def mag_err_cut(self,magerr=0.2):
         
         galaxy_data,galaxy_name=self.get_data_and_name_attributes()
         
@@ -296,6 +300,8 @@ class initial_processes:
         #output produced and xi and eta columns added to datagalaxy_data
         galaxy_data['xi']=coords[0]
         galaxy_data['eta']=coords[1]
+        
+        self.galaxy_data=galaxy_data
             
 #function to cut Datagalaxy_data based on cls index
 
@@ -333,10 +339,13 @@ class initial_processes:
         
         galaxy_data['DEC']=coords[1]
         
+        self.galaxy_data=galaxy_data
+        
         #applies extinction correction to data in Datagalaxy_data format    
         #again used in the class only
-    def ext_corr(galaxy_data):
+    def ext_corr(self):
         
+        galaxy_data=self.galaxy_data
 
         #attributes set as variables for ease
         
@@ -345,7 +354,7 @@ class initial_processes:
         
         #astropy skycoord called, units and galaxy_data set
         
-        coords=SkyCoord(ra,dec,unit='deg',galaxy_data='icrs')
+        coords=SkyCoord(ra,dec,unit='deg')
         
         #sfd map chosen
         
@@ -366,6 +375,8 @@ class initial_processes:
         galaxy_data.jmag=galaxy_data.jmag - jext
         galaxy_data.hmag=galaxy_data.hmag - hext
         galaxy_data.kmag=galaxy_data.kmag - kext
+        
+        self.galaxy_data=galaxy_data
         
         print('UKIRT extinction corrections done')
             

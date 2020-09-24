@@ -4,9 +4,9 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.ticker import (MultipleLocator, FormatStrFormatter,
                                AutoMinorLocator)
-from data_load import data_load
+from data_load import data_loader
 
-from data_read import data_read
+from data_read import data_reader
 
 from subhess import plotsubhess
 
@@ -18,23 +18,23 @@ class data_readall:
         
         if stage!='cls_crossed':
         
-            self.n147=data_read(stage=stage,galaxy='ngc147')
-            self.n185=data_read(stage=stage,galaxy='ngc185')
-            self.n205=data_read(stage=stage,galaxy='ngc205')
-            self.m32=data_read(stage=stage,galaxy='m32')
+            self.n147=data_reader(stage=stage,galaxy='ngc147')
+            self.n185=data_reader(stage=stage,galaxy='ngc185')
+            self.n205=data_reader(stage=stage,galaxy='ngc205')
+            self.m32=data_reader(stage=stage,galaxy='m32')
             self.dEs=np.array([self.n147,self.n185,self.n205,self.m32])
             
-            self.n147_cm=data_read(stage='cm',galaxy='ngc147')
-            self.n185_cm=data_read(stage='cm',galaxy='ngc185')
-            self.n205_cm=data_read(stage='cm',galaxy='ngc205')
-            self.m32_cm=data_read(stage='cm',galaxy='m32')
+            self.n147_cm=data_reader(stage='cm',galaxy='ngc147')
+            self.n185_cm=data_reader(stage='cm',galaxy='ngc185')
+            self.n205_cm=data_reader(stage='cm',galaxy='ngc205')
+            self.m32_cm=data_reader(stage='cm',galaxy='m32')
         if stage=='agb':
             
-            self.n147_crossed=data_read(stage='agb_crossed',galaxy='ngc147')
+            self.n147_crossed=data_reader(stage='agb_crossed',galaxy='ngc147')
             
         else:
             
-            self.n147_crossed=data_read(stage='cls_crossed',galaxy='ngc147')
+            self.n147_crossed=data_reader(stage='cls_crossed',galaxy='ngc147')
             
             
             
@@ -44,19 +44,19 @@ class data_readall:
                 i.data = e.select_ellipse(i.data,afl=arcmin_radius/60)[0]
             
         if stage!='cm':
-            and1=data_read(stage,'and1')
-            and2=data_read(stage,'and2')
-            and3=data_read(stage,'and3')
-            and6=data_read(stage,'and6')
-            and7=data_read(stage,'and7')
-            and10=data_read(stage,'and10',)
-            and14=data_read(stage,'and14',)
-            and15=data_read(stage,'and15')
-            and16=data_read(stage,'and16')
-            and17=data_read(stage,'and17')
-            and18=data_read(stage,'and18')
-            and19=data_read(stage,'and19')
-            and20=data_read(stage,'and20')
+            and1=data_reader(stage,'and1')
+            and2=data_reader(stage,'and2')
+            and3=data_reader(stage,'and3')
+            and6=data_reader(stage,'and6')
+            and7=data_reader(stage,'and7')
+            and10=data_reader(stage,'and10',)
+            and14=data_reader(stage,'and14',)
+            and15=data_reader(stage,'and15')
+            and16=data_reader(stage,'and16')
+            and17=data_reader(stage,'and17')
+            and18=data_reader(stage,'and18')
+            and19=data_reader(stage,'and19')
+            and20=data_reader(stage,'and20')
         
             self.sphs=np.array([and1,and2,and3,and6,and7,and10,and14,and15,and16,and17,and18,and19,and20])
 
