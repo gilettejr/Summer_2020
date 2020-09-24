@@ -3,8 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from graphing_utils import graphing_utils
+#from graphing_utils import graphing_utils
 from selection_utils import selection_utils
+from initial_processes import initial_processes
 
 
 #imports for manipulating astronomical data
@@ -47,7 +48,7 @@ from matplotlib.patches import Ellipse,Rectangle
 
 #methods: forecut,trgbcut,trgbfind,plot_kj_cmd,plot_spatial,save_as_parquet
 # =============================================================================
-class data_load:
+class data_loader:
     #reads in and performs initial cuts on data from chosen galaxy
     #change optional arguments to false to skip initial cuts
     #path_to_file argument used to specify where WFCAM data is stored
@@ -87,16 +88,16 @@ class data_load:
             
         self.CM_to_FEH_unc=CM_to_FEH_unc
 
-        def linecut(frame,xdata,ydata,point1,point2):
+        def linecut(galaxy_data,xdata,ydata,point1,point2):
         
-            upper=frame.copy()
-            lower=frame.copy()
+            upper=galaxy_data.copy()
+            lower=galaxy_data.copy()
             
             m=(point2[1]-point1[1])/(point2[0]-point1[0])
             
             c=point1[1]-point1[0] * m
             
-            for i in frame.index:
+            for i in galaxy_data.index:
                 
                 if ydata[i] > m * xdata[i] + c:
                     
@@ -108,356 +109,11 @@ class data_load:
             
             return([upper,lower])
         
-        self.linecut=linecut
+
         #convert hhmmss ra and ddmmss dec into decimal values
         
-        def make_deg_coord(frame):
-            
-            #takes relevant columns as arguements, converts into single ra and single dec column
-            
-            def coordtransform(rah,ram,ras,dd,dm,ds):
-            
-                #transformations carried out
-                
-                #ra
-                
-                long = (rah + np.divide(ram,60) + np.divide(ras,3600))*15
-                
-                #dec
-                
-                lat = dd + np.divide(dm,60) + np.divide(ds,3600)
-                
-                #array containing transformed co-ordinates returned
-        
-                return(np.array([long,lat]))
-                
-            #function called    
-            
-            coords=coordtransform(frame.rah,frame.ram,frame.ras,frame.dd,frame.dm,frame.ds)
-                
-            #columns added to DataFrame
-                
-            frame['RA']=coords[0]
-            
-            frame['DEC']=coords[1]
+
         #creates standard coordinates from ra and dec inputs. dE and dSph coordinates are hard coded here    
-        def make_tan_coord(frame,galaxy):
-                #intermediate function to do the heavy lifting
-                def create_tangent_coords(frame,tangentra,tangentdec):
-        
-                    #ra and dec attributes converted to variables in radians
-        
-                    ra = np.radians(frame.RA)
-                    dec = np.radians(frame.DEC)
-                    
-                    #tangent co-ordinates also converted to radians
-                    
-                    tanra = np.radians(tangentra)
-                    tandec = np.radians(tangentdec)
-                    
-                    #conversion for xi carried out
-                    
-                    xi = (np.cos(dec)*np.sin(ra-tanra))/(np.sin(dec)*np.sin(tandec) + np.cos(dec)*np.cos(tandec)*np.cos(ra-tanra))
-                    
-                    #conversion for eta carried out
-                    
-                    eta = (np.sin(dec)*np.cos(tandec)-np.cos(dec)*np.sin(tandec)*np.cos(ra-tanra))/(np.sin(dec)*np.cos(tandec)+np.cos(dec)*np.sin(tandec)*np.cos(ra-tanra))
-                    
-                    #co-ordinates converted to degrees and set as attributes
-                    
-                    xi = xi * (180/np.pi)
-                    eta = eta * (180/np.pi)
-                    
-                    return (np.array([xi,eta]))
-                #ra and dec positions in decimal degrees for each galaxy
-                if galaxy=='ngc147':
-                    tra=8.300500
-                    tdec=48.50850
-                elif galaxy=='ngc185':
-                    tra=9.7415417
-                    tdec=48.3373778
-                elif galaxy=='ngc205':
-                    tra=10.09189356
-                    tdec=41.68541564
-                elif galaxy=='m32':
-                    tra=10.6742708
-                    tdec=40.8651694
-                
-                elif galaxy=='m31':
-                    tra=10.68470833
-                    tdec=41.26875
-                    
-                elif galaxy=='and1':
-                    tra=11.41583333
-                    tdec=38.04111111
-                    
-                elif galaxy=='and2':
-                    tra=19.12416667
-                    tdec=33.41916667
-                    
-                elif galaxy=='and3':
-                    tra=8.84458333
-                    tdec=36.50472222
-                    
-                elif galaxy=='and6':
-                    tra=357.94333333
-                    tdec=24.58638889
-                    
-                elif galaxy=='and7':
-                    tra=351.63208333
-                    tdec=50.67583333
-                    
-                elif galaxy=='and10':
-                    tra=16.64041667
-                    tdec=44.80438889
-                    
-                    
-                elif galaxy=='and14':
-                    tra=12.89583333
-                    tdec=29.69694444
-                    
-                elif galaxy=='and15':
-                    tra=18.57791667
-                    tdec=38.1175
-                    
-                elif galaxy=='and16':
-                    tra=14.87416667
-                    tdec=32.37666667
-                    
-                elif galaxy=='and17':
-                    tra=9.27916667
-                    tdec=44.32222222
-                    
-                elif galaxy=='and18':
-                    tra=0.56041667
-                    tdec=45.08888889
-                    
-                    
-                elif galaxy=='and19':
-                    tra=4.88375
-                    tdec=35.04363889
-                    
-                elif galaxy=='and20':
-                    tra=1.8779166700000003
-                    tdec=35.13233333
-                #function run dependent on galaxy
-                coords=create_tangent_coords(frame,tra,tdec)
-                #output produced and xi and eta columns added to dataframe
-                frame['xi']=coords[0]
-                frame['eta']=coords[1]
-                    
-        #function to cut DataFrame based on cls index
-        
-        def CLS_cut(frame,bands='norm'):
-            #set of cuts used for normal data processing
-            if bands=='norm':
-                #m32 treated differently to prevent gradient issues in spatial distribution
-                if self.galaxy=='m32':
-                    for i in range(len(frame.jcis)):
-                        #standard cls cuts made for the rest
-                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.hcis[i]==-8.0) or frame.jmag[i]-frame.hmag[i] > 17:
-                            frame.loc[i]=np.nan
-                
-                else:
-                
-
-                #standard cls cuts made for the rest
-                    nines=[]
-                    for i in range(len(frame.jcis)):
-
-                        if frame.kcis[i]==-9.0 or frame.jcis[i]==-9.0 or frame.hcis[i]==-9.0:
-                            nines.append(0)
-                        
-                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
-                            frame.loc[i]=np.nan
-                print(len(nines))
-                print(len(frame.dropna()))
-            #different combinations of cls cuts included below
-            #can be used to test effect of different cls cuts
-
-                
-            elif bands=='jh' or bands=='hj':
-                
-                if self.galaxy=='m32':
-                    for i in range(len(frame.jcis)):
-                    
-                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0 and frame.hcis[i]!=-3.0):
-                            frame.loc[i]=np.nan
-                
-                else:
-                
-                #removes any non-stellar sources from data
-                    for i in range(len(frame.jcis)):
-                        if (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
-                            frame.loc[i]=np.nan      
-                            
-            elif bands=='hk':
-                
-                if self.galaxy=='m32':
-                    for i in range(len(frame.jcis)):
-                    
-                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0 and frame.hcis[i]!=-3.0):
-                            frame.loc[i]=np.nan
-                
-                else:
-                
-                #removes any non-stellar sources from data
-                    for i in range(len(frame.jcis)):
-                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0): 
-                            frame.loc[i]=np.nan
-                            
-            elif bands =='jk':
-                
-
-                
-                if self.galaxy=='m32':
-                    for i in range(len(frame.jcis)):
-                    
-                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0):
-                            frame.loc[i]=np.nan
-                
-                else:
-                
-                #removes any non-stellar sources from data
-                    for i in range(len(frame.jcis)):
-                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
-                            frame.loc[i]=np.nan
-                            
-            elif bands == 'j':
-                
-                if self.galaxy=='m32':
-                    for i in range(len(frame.jcis)):
-                    
-                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0):
-                            frame.loc[i]=np.nan
-                
-                else:
-                
-                #removes any non-stellar sources from data
-                    for i in range(len(frame.jcis)):
-                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
-                            frame.loc[i]=np.nan
-                            
-            elif bands == 'h':
-                
-                if self.galaxy=='m32':
-                    for i in range(len(frame.jcis)):
-                    
-                        if (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0 and frame.hcis[i]!=-3.0):
-                            frame.loc[i]=np.nan
-                
-                else:
-                
-                #removes any non-stellar sources from data
-                    for i in range(len(frame.jcis)):
-                        if (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0): 
-                            frame.loc[i]=np.nan
-                            
-            elif bands == 'k':
-                
-                if self.galaxy=='m32':
-                    for i in range(len(frame.jcis)):
-                    
-                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0):
-                            frame.loc[i]=np.nan
-                
-                else:
-                
-                #removes any non-stellar sources from data
-                    for i in range(len(frame.jcis)):
-                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0): 
-                            frame.loc[i]=np.nan
-                            
-            elif bands=='all':
-                
-                if self.galaxy=='m32':
-                    for i in range(len(frame.jcis)):
-                    
-                        if (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0 and frame.jcis[i]!=-3.0) or (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0 and frame.kcis[i]!=-3.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0 and frame.hcis[i]!=-3.0):
-                            frame.loc[i]=np.nan
-                
-                else:
-                
-                #removes any non-stellar sources from data
-                    for i in range(len(frame.jcis)):
-                        if (frame.kcis[i] != -1.0 and frame.kcis[i]!=-2.0) or (frame.hcis[i] != -1.0 and frame.hcis[i]!=-2.0) or (frame.jcis[i] != -1.0 and frame.jcis[i]!=-2.0): 
-                            frame.loc[i]=np.nan
-                            
-            else:
-                #failure if invalid cls argument chosen upon class initialisation
-                print('Invalid CLS argument chosen, no CLS cut made')
-            #percentage decrease of catalogue length calculated and printed
-            
-            k=len(frame.jcis)
-            l=len(frame.jcis.dropna())            
-            decrease=100-(l/k)*100
-            
-            print('CLS cut reduced data by ' + str(int(decrease)) + '%')
-            
-            #for some reason if I put frame=frame.dropna() here it doesn't do anything, so I have to wipe the NaNs outside the function
-            
-            
-        #function to cut data with large magnitude error
-        #takes dataframe as input, only used internally in this class
-        
-        def mag_err_cut(frame,magerr=0.2):
-            
-            #have to start being careful about referencing index column of dataframe now since dropna() will have been used
-            
-            for i in frame.index:
-                if frame.kerr[i] > magerr or frame.herr[i] > magerr or frame.kerr[i] > magerr:
-                
-                    frame.loc[i]=np.nan
-            
-            #percentage decrease of catalogue length calculated and printed
-            
-            k=len(frame.jcis)
-            l=len(frame.jcis.dropna())
-            
-            decrease=100-(l/k)*100
-            
-            print('Magerr cut reduced data by ' + str(int(decrease)) + '%')
-            
-        #applies extinction correction to data in DataFrame format    
-        #again used in the class only
-        def ext_corr(frame):
-            
-
-            #attributes set as variables for ease
-            
-            ra = frame.RA
-            dec = frame.DEC
-            
-            #astropy skycoord called, units and frame set
-            
-            coords=SkyCoord(ra,dec,unit='deg',frame='icrs')
-            
-            #sfd map chosen
-            
-            sfd=SFDQuery()
-            
-            #E(B-V) for each star loaded into array from map
-            
-            sfdred=sfd(coords)
-               
-            #corrections from table 6 of Schlafly and Finkbeiner(2011) made
-            
-            jext = sfdred * 0.709
-            hext = sfdred * 0.449
-            kext = sfdred * 0.302
-            
-            #extinction corrections carried out on class attributes
-            
-            frame.jmag=frame.jmag - jext
-            frame.hmag=frame.hmag - hext
-            frame.kmag=frame.kmag - kext
-            
-            print('UKIRT extinction corrections done')
-     
-
-
-
-
 
 
         #with initial functions defined, we now need to convert the ASCII WFCAM data into a dataframe
@@ -496,15 +152,15 @@ class data_load:
         #end result is the same
         if galaxy=='m31':
         
-            frame=pd.read_csv(path_to_file + file,sep="\s+",names=excolumnames)
+            galaxy_data=pd.read_csv(path_to_file + file,sep="\s+",names=excolumnames)
             
         else:
             
-            frame=ascii.read(path_to_file + file)
+            galaxy_data=ascii.read(path_to_file + file)
             
             #dataframe created
             
-            frame=frame.to_pandas()
+            galaxy_data=galaxy_data.to_pandas()
 
 
     
@@ -515,19 +171,23 @@ class data_load:
             
             if self.galaxy=='ngc205' or self.galaxy=='m32':
                 
-                frame=frame.drop(['col26'],axis=1)
-                frame=frame.drop(['col25'],axis=1)
-                frame=frame.drop(['col24'],axis=1)
-                frame=frame.drop(['col23'],axis=1)
+                galaxy_data=galaxy_data.drop(['col26'],axis=1)
+                galaxy_data=galaxy_data.drop(['col25'],axis=1)
+                galaxy_data=galaxy_data.drop(['col24'],axis=1)
+                galaxy_data=galaxy_data.drop(['col23'],axis=1)
             
             #column names assigned
             
-            frame.columns=columnames
+            galaxy_data.columns=columnames
+            
+        self.galaxy_data=galaxy_data
 
+        startup_processor=initial_processes(self)
         
         #decimal and tangent coordinates constructed
-        make_deg_coord(frame)
-        make_tan_coord(frame,self.galaxy)
+        startup_processor.make_deg_coord()
+        startup_processor.make_tan_coord()
+
         
         #optional skip when initiating class for the cuts/extinction corrections
         #all True by default, so mostly will be run
@@ -536,24 +196,24 @@ class data_load:
             
             
             #cls cut carried out, NaN values purged
-            CLS_cut(frame,bands=CLS_mags)
-            frame=frame.dropna()
-            print(str(len(frame)) + ' sources retained after CLS cut')
+            startup_processor.CLS_cut(bands=CLS_mags)
+            galaxy_data=galaxy_data.dropna()
+            print(str(len(galaxy_data)) + ' sources retained after CLS cut')
         if mag==True:
             
             #mag cut carried out, NaN values purged
-            mag_err_cut(frame)
+            startup_processor.mag_err_cut()
             
-            frame=frame.dropna()
-            print(str(len(frame)) + ' sources retained after mag cut')
+            galaxy_data=galaxy_data.dropna()
+            print(str(len(galaxy_data)) + ' sources retained after mag cut')
         if ext==True:
             
             #extinction corrections done
-            ext_corr(frame)
+            startup_processor.ext_corr()
         
         #data set as class attribute
         
-        self.data=frame
+        self.data=galaxy_data
     #define line with two points, make a cut on left and right side
     #point arguments given in tuples
     #xdata, ydata lists of colour/magnitude data
