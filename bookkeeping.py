@@ -9,13 +9,13 @@ import os
 #class to keep track of everything in intermediate data directories
 class bookkeeping:
     #performs extinction, cls and magerr cuts for each galaxy,
-    def __init__(self,CLS_mags='norm'):
+    def __init__(self,cls_bands='norm'):
         
         def load_all():
-            n147=data_loader('ngc147',CLS_mags=CLS_mags)
-            n185=data_loader('ngc185',CLS_mags=CLS_mags)
-            n205=data_loader('ngc205',CLS_mags=CLS_mags)
-            m32=data_loader('m32',CLS_mags=CLS_mags)
+            n147=data_loader('ngc147',cls_bands=cls_bands)
+            n185=data_loader('ngc185',cls_bands=cls_bands)
+            n205=data_loader('ngc205',cls_bands=cls_bands)
+            m32=data_loader('m32',cls_bands=cls_bands)
             
             return [n147,n185,n205,m32]
         
@@ -28,19 +28,19 @@ class bookkeeping:
             return [n147,n185,n205,m32]
         
         def load_sph_all():
-            and1=data_loader('and1',CLS_mags=CLS_mags)
-            and2=data_loader('and2',CLS_mags=CLS_mags)
-            and3=data_loader('and3',CLS_mags=CLS_mags)
-            and6=data_loader('and6',CLS_mags=CLS_mags)
-            and7=data_loader('and7',CLS_mags=CLS_mags)
-            and10=data_loader('and10',CLS_mags=CLS_mags)
-            and14=data_loader('and14',CLS_mags=CLS_mags)
-            and15=data_loader('and15',CLS_mags=CLS_mags)
-            and16=data_loader('and16',CLS_mags=CLS_mags)
-            and17=data_loader('and17',CLS_mags=CLS_mags)
-            and18=data_loader('and18',CLS_mags=CLS_mags)
-            and19=data_loader('and19',CLS_mags=CLS_mags)
-            and20=data_loader('and20',CLS_mags=CLS_mags)
+            and1=data_loader('and1',cls_bands=cls_bands)
+            and2=data_loader('and2',cls_bands=cls_bands)
+            and3=data_loader('and3',cls_bands=cls_bands)
+            and6=data_loader('and6',cls_bands=cls_bands)
+            and7=data_loader('and7',cls_bands=cls_bands)
+            and10=data_loader('and10',cls_bands=cls_bands)
+            and14=data_loader('and14',cls_bands=cls_bands)
+            and15=data_loader('and15',cls_bands=cls_bands)
+            and16=data_loader('and16',cls_bands=cls_bands)
+            and17=data_loader('and17',cls_bands=cls_bands)
+            and18=data_loader('and18',cls_bands=cls_bands)
+            and19=data_loader('and19',cls_bands=cls_bands)
+            and20=data_loader('and20',cls_bands=cls_bands)
             
             return [and1,and2,and3,and6,and7,and10,and14,and15,and16,and17,and18,and19,and20]
             
@@ -97,7 +97,7 @@ class bookkeeping:
                 galaxy_object.save_to_parquet('processed_data/cls_cut_data/' + galaxy_object.galaxy)                
                 
                 
-            galaxy_object.forecut()
+            galaxy_object.do_forecut()
             try:
                 
                 galaxy_object.save_to_parquet('processed_data/fore_cut_data/' + galaxy_object.galaxy)
@@ -149,7 +149,7 @@ class bookkeeping:
         #each step
         for i in sets:
             i.save_to_parquet('processed_data/cls_cut_data/' + i.galaxy)
-            i.forecut()
+            i.do_forecut()
             i.save_to_parquet('processed_data/fore_cut_data/' + i.galaxy)
             i.trgbcut()
             i.save_to_parquet('processed_data/agb_data/' + i.galaxy)
