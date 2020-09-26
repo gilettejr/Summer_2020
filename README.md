@@ -10,9 +10,13 @@ Once this is complete, you can view cmds, ccs, spatial distributions etc by firs
 For example, if we want to look at the k-j cmd for NGC205 after the foreground colour cut has been made:
 
 #create instance of class with chosen galaxy and stage of analysis desired
+
+
 galaxy_object=data_read(galaxy='ngc205',stage='fore_cut')
 
 #call the static method plot_kj_cmd in the basic_agb_plotter class to plot the data
+
+
 basic_agb_plotter.plot_kj_cmd(galaxy_object)
 
 The options for the galaxy argument are: cls_cut, fore_cut, agb, agb_crossed, cm
