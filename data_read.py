@@ -32,28 +32,6 @@ class data_reader(data_loader):
         
         #function to cut data to the left/right of non vertical line
         #pretty much redundant
-        def linecut(frame,xdata,ydata,point1,point2):
-        
-            upper=frame.copy()
-            lower=frame.copy()
-            
-            m=(point2[1]-point1[1])/(point2[0]-point1[0])
-            
-            c=point1[1]-point1[0] * m
-            
-            for i in frame.index:
-                
-                if ydata[i] > m * xdata[i] + c:
-                    
-                    lower.loc[i]=np.nan
-                    
-                else:
-                    
-                    upper.loc[i]=np.nan
-            
-            return([upper,lower])
-        
-        self.linecut=linecut
         
         def eq_to_tan(ra,dec,tangentra,tangentdec):
             
@@ -387,6 +365,19 @@ class data_reader(data_loader):
         trgbloc_sd = np.std(trgbloc)     # Find the Error in the TRGB estimate
         
         return [trgbloc_mean, trgbloc_sd]
+        
+    def find_FEH(self):
+        
+        #function performs conversion between CM and [Fe/H] from Cioni(2009)
+        #define c/m ratio
+        CM=len(self.cdata.dropna())/len(self.mdata.dropna())
+        
+        #carry out conversion
+        FEH=self.CM_to_FEH(CM)
+        #print out result
+        print('C/M = ' + str(CM) + ' [Fe/H] = ' + str(FEH))
+        
+
         
         
         

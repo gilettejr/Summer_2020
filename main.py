@@ -6,6 +6,7 @@ Created on Sat Sep 28 15:14:03 2019
 @author: cameronrobertson
 """
 from sat_graphers import sat
+from agb_plotter import basic_agb_plotter
 #from runners import run_both,run_rgb,run_cross,kde_separator
 #from iso_utils import import_isos
 #from designations import ratio_utils
@@ -40,8 +41,12 @@ import matplotlib.pyplot as plt
 #for kde method, start at 18, go upwards in bins of mag=0.4
 
 def main():
+     
+    galaxy_object=data_reader()
+  
     
-    reload_all_data()
+    basic_agb_plotter.plot_kj_cmd(galaxy_object)
+    
     
     #e.make_slices(outer_rad=0.4)
     #e.overplot_ellipses(0.46,0.02,0.4,34.2)

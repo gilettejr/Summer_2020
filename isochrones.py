@@ -1,9 +1,9 @@
-from data_read import data_read
+from data_read import data_reader
 from astropy.io import ascii
 import numpy as np
 
 import matplotlib.pyplot as plt
-class isochrones(data_read):
+class isochrones(data_reader):
     
     def plot_isos(self,isofile,graph='kj_cmd',overlay=True):
         
@@ -277,7 +277,7 @@ class isochrones(data_read):
                 
                 plt.yscale('log')
                 
-        
+        plt.gca().invert_xaxis()
         plt.legend()            
         
     def plot_simpop(self,isofile,graph='kj_cmd',overlay=False,pop='single'):

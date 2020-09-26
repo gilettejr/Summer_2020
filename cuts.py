@@ -1,5 +1,5 @@
 #imports
-from data_read import data_read
+from data_read import data_reader
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -10,10 +10,10 @@ class cuts:
     #initialise and set galaxy
     def __init__(self,galaxy='ngc147'):
         #read in different selections of data by initialising data_read instances
-        cis=data_read(stage='cls_cut',galaxy=galaxy)
-        fore=data_read(stage='fore_cut',galaxy=galaxy)
-        agb=data_read(stage='agb',galaxy=galaxy)
-        cm=data_read(stage='cm',galaxy=galaxy)
+        cis=data_reader(stage='cls_cut',galaxy=galaxy)
+        fore=data_reader(stage='fore_cut',galaxy=galaxy)
+        agb=data_reader(stage='agb',galaxy=galaxy)
+        cm=data_reader(stage='cm',galaxy=galaxy)
         
         #set datasets as attributes
         self.cisdata=cis.data
