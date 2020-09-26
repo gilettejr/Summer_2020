@@ -233,7 +233,7 @@ class data_processor(data_reader):
     
 
     
-    def slice_count_profile(self,background_deg,crowding_num=0):
+    def fit_slice_count_profile(self,background_deg,crowding_num=0):
         
         print(background_deg)
         

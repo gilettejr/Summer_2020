@@ -16,7 +16,7 @@ import shapely.affinity
 from matplotlib.patches import Ellipse,Rectangle
 
 
-class background_utilities(data_processor):
+class background_constructor(data_processor):
     
    def find_background_density_border(self,stars='agb',marker='o',markersize='1',color='black',borderwidth=0.07,show_figure=False):
         
@@ -85,7 +85,7 @@ class background_utilities(data_processor):
             
         return np.array([border_num/border_area,border_err/border_area,border_num]) 
     
-   def find_background_grad(self,ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
+   def find_background_grad(self,stars='agb',ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
         
         if self.galaxy=='m32':
             
@@ -116,7 +116,6 @@ class background_utilities(data_processor):
             
             return boundary
         
-        stars=self.stars
         
         if stars=='agb':
             
@@ -302,6 +301,7 @@ class background_utilities(data_processor):
         self.background=background
         
         self.bin_shapes=bin_shapes
+        self.stars=stars
         #fit with Sersic profile
         
 
@@ -354,12 +354,12 @@ class background_utilities(data_processor):
         background['density_fit']=s(xdata)
         
         try:
-            pd.save_to_parquet('backgrounds/' + self.galaxy + self.stars)
+            background.to_parquet('backgrounds/' + self.galaxy + self.stars)
             
         except:
             
             os.system('mkdir backgrounds')
-            pd.save_to_parquet('backgrounds/' + self.galaxy + self.stars)
+            background.to_parquet('backgrounds/' + self.galaxy + self.stars)
         
         self.background=background
         

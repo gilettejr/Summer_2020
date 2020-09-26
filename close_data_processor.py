@@ -9,6 +9,8 @@ import pandas as pd
 
 import shapely.affinity
 
+import os
+
 
 
 
@@ -24,9 +26,9 @@ class close_data_processor(data_processor):
             
             cut=3
         
-        c_slice_dataframe=pd.read_parquet(self.galaxy + '_radial_density_c')
+        c_slice_dataframe=pd.read_parquet('unfit_background_corrected_profiles/'+ self.galaxy + 'c')
         
-        m_slice_dataframe=pd.read_parquet(self.galaxy +'_radial_density_m')
+        m_slice_dataframe=pd.read_parquet('unfit_background_corrected_profiles/'+self.galaxy +'m')
         
         full_slice_nums=c_slice_dataframe.slice_nums + m_slice_dataframe.slice_nums
         
@@ -88,14 +90,14 @@ class close_data_processor(data_processor):
         print(FEH_avg)
         print(FEH_avg_unc)
         
-    def close_slice_count_profile(self):
+    def find_close_slice_count_profile(self,stars='agb'):
         
         print('Make sure youve got a background dataframe for subtraction!')
         #remake alpha coordinates
         slice_shapes=self.slice_shapes
         background=self.background
         rotate_coords=self.rotate_coords
-        stars=self.stars
+
         if stars=='agb':
             
             data=self.data
@@ -212,15 +214,23 @@ class close_data_processor(data_processor):
         
 
             
-        outfilename=self.galaxy+'_radial_density_' + stars
+        outfilename=self.galaxy + stars
         
-        density_distribution.to_parquet(outfilename)
+        
+        
+        try:
+            density_distribution.to_parquet('unfit_background_corrected_profiles/' + outfilename)
+            
+        except:
+            
+            os.system('mkdir unfit_background_corrected_profiles')
+            density_distribution.to_parquet('unfit_background_corrected_profiles/' + outfilename)
             
         plt.errorbar(xdata,ydata,yerr=yerr,linestyle='none',capsize=2,marker='o',color='black')
         
-    def fit_close_profiles(self,crowding_num=1):
-        stars='agb'
-        distribution=pd.read_parquet(self.galaxy + '_radial_density_' + stars)
+    def fit_close_slice_count_profile(self,stars='agb',crowding_num=1):
+
+        distribution=pd.read_parquet('unfit_background_corrected_profiles' + self.galaxy + stars)
         
         xdata=distribution.a
         ydata=distribution.density
@@ -254,8 +264,9 @@ class close_data_processor(data_processor):
         
         s=fit(model,xdata,ydata,weights=1/yerr)
 
-        xdata=np.linspace(min(xdata_orig),max(xdata_orig),num=1000)                   
-                    
+        xdata=np.linspace(min(xdata_orig),max(xdata_orig),num=1000)
+                 
+        
                     
         plt.plot(xdata,s(xdata),label='Sersic Fit with a$_{eff}$ = ' + str(round(s.r_eff.value,3)) + ', n = ' + str(round(s.n.value,3)))
         plt.legend()
