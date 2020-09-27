@@ -16,7 +16,7 @@ import os
 
 class close_data_processor(data_processor):
     
-    def close_FEH_slices(self):
+    def get_close_FEH_slices(self):
         
         if self.galaxy=='ngc205':
             
@@ -51,6 +51,7 @@ class close_data_processor(data_processor):
         #print(cm_slices_uncs)
         FEH_slice_uncs=self.CM_to_FEH_uncs(cm_slices,cm_slices_uncs)
 
+        
         
         plt.errorbar(slice_a,FEH_slices,marker='o',linestyle='none',color='black',capsize=2,yerr=FEH_slice_uncs)
         plt.ylabel('[Fe/H]')
@@ -89,6 +90,11 @@ class close_data_processor(data_processor):
         print(avg_CM_unc)
         print(FEH_avg)
         print(FEH_avg_unc)
+        
+        self.FEH_x=slice_a
+        self.FEH_y=FEH_slices
+        self.FEH_yunc=FEH_slice_uncs
+        
         
     def find_close_slice_count_profile(self,stars='agb'):
         
