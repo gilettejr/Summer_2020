@@ -4,43 +4,16 @@ from random import *
 from scipy import *
 from matplotlib import *
 rcdefaults()
-#matplotlib.rc('font',family='Bitstream Vera Serif')
 
-
-
-def plotsubhess(color,mag,ax,label,levels='None', xlims=[-1,4.5], ylims=[21,11], colormap=cm.plasma, cbarr='None', cbarrtitle='', xlab='$J_0$-$K_0$', ylab='$K_0$', saveas='HessCMD.png'):
-    """
-    plotHess(mag,color) is a function intended to create a contour plot of stellar density in the canonical Color-Magnitude Diagram (CMD). plotHess() plots all the stars in the CMD and then overplots a contour of their density.
-    mag = magnitudes of the stars
-    color = colors of the stars
-    mag and color are required to run plotHess() and need to be the same length arrays.
-    Optional keyword arguments:
-    
-    =========   =======================================================
-    Keyword     Description
-    =========   =======================================================
-    levels:    levels to be used for density contour; if 'None', the defaults are defined by the contour() function, which may not be optimal for the users dataset and may be changed if necessary.
-    ylims:      define the y-range of the plotted values; defaults will need to be changed to fit user's data.
-    xlims:      define the x-range of the plotted values; defaults will need to be changed to fit user's data.
-    colormap:   allows the user to choose a Python color map to use for the contour; the default is grayscale.
-    cbarr:      'None' means the colorbar will not be plot as a default. To change this, set cbarr='Yes'; in a true Hess diagram, the cbarr values represent the stellar point density in the CMD plot.
-    cbarrtitle: sets the title for the colorbar; should be string
-    xlabel:     sets the xlabel for the plot; should be string
-    ylabel:     sets the ylabel for the plot; should be string
-    saveas:     pathway for saving the output plot. The default is to save in the same folder as "HessCMD.png"
-    
-    
-    """
-    ### Set figure options
-    
+def create_hess_diagram(xdata,ydata,ax,label,xlims=[-1,4.5], ylims=[21,11], colormap=cm.plasma,cbarr='None', cbarrtitle='', xlab='$J_0$-$K_0$', ylab='$K_0$'):
     rc('axes',labelsize=25)
     ### Plot all stars in CMD as small points
-    ax.plot(color,mag,linestyle='none',marker ='.',ms=1,color='black',zorder=1,label=label)
+    ax.plot(xdata,ydata,linestyle='none',marker ='.',ms=1,color='black',zorder=1,label=label)
 
 
 
     ### Use color and magnitude data to split and average into a binned 2D histogram
-    Z, xedges, yedges = np.histogram2d(color,mag,bins=(300,300))
+    Z, xedges, yedges = np.histogram2d(xdata,ydata,bins=(300,300))
     
     ### Find the cell centers from the cell edges
     x = 0.5*(xedges[:-1] + xedges[1:])
@@ -67,10 +40,50 @@ def plotsubhess(color,mag,ax,label,levels='None', xlims=[-1,4.5], ylims=[21,11],
         cbar_ax = fig.add_axes([0.91, 0.14, 0.02, 0.7])
         d=fig.colorbar(cntr, cax=cbar_ax)#, title=cbarrtitle)
         d.set_label(label=cbarrtitle,size=10)
-    
-    #plt.gca().invert_yaxis()
-    ### Set final options and save figure to default (current folder) or to a user-defined location on disk
-    #savefig(saveas,dpi=300)
 
+#matplotlib.rc('font',family='Bitstream Vera Serif')
+
+class subhess:
+
+    def plot_kj_cmd(galaxy_object,ax,label):
+        """
+        plotHess(mag,color) is a function intended to create a contour plot of stellar density in the canonical Color-Magnitude Diagram (CMD). plotHess() plots all the stars in the CMD and then overplots a contour of their density.
+        mag = magnitudes of the stars
+        color = colors of the stars
+        mag and color are required to run plotHess() and need to be the same length arrays.
+        Optional keyword arguments:
+        
+        =========   =======================================================
+        Keyword     Description
+        =========   =======================================================
+        levels:    levels to be used for density contour; if 'None', the defaults are defined by the contour() function, which may not be optimal for the users dataset and may be changed if necessary.
+        ylims:      define the y-range of the plotted values; defaults will need to be changed to fit user's data.
+        xlims:      define the x-range of the plotted values; defaults will need to be changed to fit user's data.
+        colormap:   allows the user to choose a Python color map to use for the contour; the default is grayscale.
+        cbarr:      'None' means the colorbar will not be plot as a default. To change this, set cbarr='Yes'; in a true Hess diagram, the cbarr values represent the stellar point density in the CMD plot.
+        cbarrtitle: sets the title for the colorbar; should be string
+        xlabel:     sets the xlabel for the plot; should be string
+        ylabel:     sets the ylabel for the plot; should be string
+        saveas:     pathway for saving the output plot. The default is to save in the same folder as "HessCMD.png"
+        
+        
+        """
+        ### Set figure options
+        
+        galaxy_data=galaxy_object.data
+        
+        xdata=galaxy_data.jmag-galaxy_data.kmag
+        ydata=galaxy_data.kmag
+        
+        create_hess_diagram(xdata,ydata,ax,label)
+        
     
-    return
+    def plot_cc(galaxy_object,ax,label):
+        
+        galaxy_data=galaxy_object.data
+        
+        xdata=galaxy_data.jmag-galaxy_data.hmag
+        ydata=galaxy_data.hmag-galaxy_data.kmag
+        
+        create_hess_diagram(xdata,ydata,ax,label)
+        
