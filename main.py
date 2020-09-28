@@ -5,8 +5,9 @@ Created on Sat Sep 28 15:14:03 2019
 
 @author: cameronrobertson
 """
-from sat_graphers import sat
-from agb_plotter import basic_agb_plotter
+from basic_agb_plotter import basic_agb_plotter
+from four_agb_plotter import four_agb_plotter
+from close_data_processor import close_data_processor
 #from runners import run_both,run_rgb,run_cross,kde_separator
 #from iso_utils import import_isos
 #from designations import ratio_utils
@@ -17,13 +18,17 @@ from cuts import cuts
 from cuts_all import cuts_all
 from bookkeeping import bookkeeping
 from edge_detectors import edge_detectors
-from spitzer import spitzer
+
+from background_constructor import background_constructor
+
 from isochrones import isochrones
 from crossmatch_stilts import crossmatch
 from selection_utils import selection_utils
+
+from background_runner import background_runner
 #from stack import stack
 from HESSCMD import plotHess
-from sersic_graphs import radial_graphs
+
 from reload_all_data import reload_all_data
 import numpy as np
 import matplotlib.pyplot as plt
@@ -42,10 +47,8 @@ import matplotlib.pyplot as plt
 
 def main():
      
-    galaxy_object=data_reader()
-  
-    
-    basic_agb_plotter.plot_kj_cmd(galaxy_object)
+    runner=background_runner()
+    runner.make_all_close_backgrounds()
     
     
     #e.make_slices(outer_rad=0.4)

@@ -8,7 +8,7 @@ from data_load import data_loader
 
 from data_read import data_reader
 
-from subhess import plotsubhess
+from subhess import subhess
 
 from selection_utils import selection_utils
 

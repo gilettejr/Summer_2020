@@ -30,24 +30,8 @@ class four_agb_plotter:
             for i in self.dEs:
                 i.data = e.select_ellipse(i.data,afl=arcmin_radius/60)[0]
             
-        if stage!='cm':
-            and1=data_reader(stage,'and1')
-            and2=data_reader(stage,'and2')
-            and3=data_reader(stage,'and3')
-            and6=data_reader(stage,'and6')
-            and7=data_reader(stage,'and7')
-            and10=data_reader(stage,'and10',)
-            and14=data_reader(stage,'and14',)
-            and15=data_reader(stage,'and15')
-            and16=data_reader(stage,'and16')
-            and17=data_reader(stage,'and17')
-            and18=data_reader(stage,'and18')
-            and19=data_reader(stage,'and19')
-            and20=data_reader(stage,'and20')
-        
-            self.sphs=np.array([and1,and2,and3,and6,and7,and10,and14,and15,and16,and17,and18,and19,and20])
            
-    def plot_kj_cmd_hess(self):
+    def plot_kj_cmd_hess(self,save=False):
                 
         def jk_errors(data,binsize,start_loc):
             
@@ -80,10 +64,10 @@ class four_agb_plotter:
             
             
         
-        n147=self.n147.data
-        n185=self.n185.data
-        n205=self.n205.data
-        m32=self.m32.data
+        n147=self.n147
+        n185=self.n185
+        n205=self.n205
+        m32=self.m32
         
         n147_c=self.n147_cm.cdata
         n185_c=self.n185_cm.cdata
@@ -95,7 +79,7 @@ class four_agb_plotter:
         n205_m=self.n205_cm.mdata
         m32_m=self.m32_cm.mdata
         
-        dim_data=[[n147,n185],[n205,m32]]
+        dim_data=[[n147.data,n185.data],[n205.data,m32.data]]
         
         sns.set_context('paper')
         
@@ -119,9 +103,9 @@ class four_agb_plotter:
         
         fig,axs=plt.subplots(2,2,sharex=True,sharey=True,figsize=[6,6])
         
-        subhess.plot_kj_cmd(n147,ax=axs[0,0],label='NGC 147')
-        subhess.plot_kj_cmd(n185,ax=axs[0,1],label='NGC 185')
-        subhess.plot_kj_cmd(n205,ax=axs[1,0],label='NGC 205')
+        subhess.plot_kj_cmd(n147,ax=axs[0,0],label='NGC147')
+        subhess.plot_kj_cmd(n185,ax=axs[0,1],label='NGC185')
+        subhess.plot_kj_cmd(n205,ax=axs[1,0],label='NGC205')
         subhess.plot_kj_cmd(m32,ax=axs[1,1],label='M32')
         start_loc=19
         binsize=1
@@ -143,17 +127,7 @@ class four_agb_plotter:
                 axs[i,j].plot(xtrgb,ytrgb,linestyle='--',color='black')
                 axs[i,j].plot(xfore,yfore,linestyle='dashdot',color='black')
             
-        
-        #axs[0,0].plot(n147_m.jmag-n147_m.kmag,n147_m.kmag,color='blue',markersize=markersize,linestyle='none',marker='o',label='C-type')
-        #axs[0,1].plot(n185_m.jmag-n185_m.kmag,n185_m.kmag,color='blue',markersize=markersize,linestyle='none',marker='o')
-        #axs[1,0].plot(n205_m.jmag-n205_m.kmag,n205_m.kmag,color='blue',markersize=markersize,linestyle='none',marker='o')
-        #axs[1,1].plot(m32_m.jmag-m32_m.kmag,m32_m.kmag,color='blue',markersize=markersize,linestyle='none',marker='o')
-  
-        #axs[0,0].plot(n147_c.jmag-n147_c.kmag,n147_c.kmag,color='red',markersize=markersize,linestyle='none',marker='o')
-        #axs[0,1].plot(n185_c.jmag-n185_c.kmag,n185_c.kmag,color='red',markersize=markersize,linestyle='none',marker='o')
-        #axs[1,0].plot(n205_c.jmag-n205_c.kmag,n205_c.kmag,color='red',markersize=markersize,linestyle='none',marker='o')
-        #axs[1,1].plot(m32_c.jmag-m32_c.kmag,m32_c.kmag,color='red',markersize=markersize,linestyle='none',marker='o')
-        
+
 
         
         plt.subplots_adjust(wspace=0, hspace=0)
@@ -161,17 +135,10 @@ class four_agb_plotter:
         axes=[axs[0,0],axs[0,1],axs[1,0],axs[1,1]]
         for i in axes:
             #i.label_outer()
-            leg = i.legend(handlelength=0, handletextpad=0, frameon=False)
+            leg = i.legend(handlelength=0, handletextpad=0, frameon=False,loc='upper right',markerscale=0.001)
             for item in leg.legendHandles:
                 item.set_visible(False)
-        #axs[0,0].plot(n147.jmag-n147.kmag,n147.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
-        #axs[0,1].plot(n185.jmag-n185.kmag,n185.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
-        #axs[1,0].plot(n205.jmag-n205.kmag,n205.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
-        #axs[1,1].plot(m32.jmag-m32.kmag,m32.kmag,linestyle='none',marker=marker,markersize=markersize,color='black')
-        
-        #axs[0,0].set_ylim(11,20)
-        #axs[0,0].set_xlim(-0.6,4.5)
-        
+
         
         for i in range(2):
             
@@ -189,14 +156,18 @@ class four_agb_plotter:
         axs[1,0].set_ylabel('K$_0$')
         axs[0,0].set_ylabel('K$_0$')
         
-        plt.savefig('report_images/cls_all.pdf')
+        if save==True:
+        
+        
+            plt.savefig('4_kj_cmd_hess.png')
+            plt.savefig('4_kj_cmd_hess.pdf')
         
         #axs[0,0].set_title('NGC147')
         #axs[0,1].set_title('NGC185')
         #axs[1,0].set_title('NGC205')
         #axs[1,1].set_title('M32')
         
-    def plot_cc_hess(self):
+    def plot_cc_hess(self,save=False):
         
         n147=self.n147
         n185=self.n185
@@ -218,9 +189,9 @@ class four_agb_plotter:
         jhcut=[[0.883,0.857],[0.930,0.913]]
         jhlim=3.18
         
-        subhess.plot_cc(n147,ax=axs[0,0],label='NGC 147')
-        subhess.plot_cc(n185,ax=axs[0,1],label='NGC 185')
-        subhess.plot_cc(n205,ax=axs[1,0],label='NGC 205')
+        subhess.plot_cc(n147,ax=axs[0,0],label='NGC147')
+        subhess.plot_cc(n185,ax=axs[0,1],label='NGC185')
+        subhess.plot_cc(n205,ax=axs[1,0],label='NGC205')
         subhess.plot_cc(m32,ax=axs[1,1],label='M32')
         
 
@@ -252,4 +223,9 @@ class four_agb_plotter:
                 
                 axs[i,j].xaxis.set_minor_locator(MultipleLocator(0.2))
                 axs[i,j].yaxis.set_minor_locator(MultipleLocator(0.2))
+                
+        if save==True:
+                
+            plt.savefig('4_cc_hess.png')
+            plt.savefig('4_cc_hess.pdf')
    

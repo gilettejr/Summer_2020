@@ -11,7 +11,7 @@ import numpy as np
 
 class data_processor(data_reader):
     
-    def construct_slices(self,stars='agb',a_width=0.02,outer_rad=0.3):
+    def construct_slices(self,stars='agb',a_width=0.02):
         
         #read in AGB data together, and individual C and M catalogues
         if stars=='agb':
@@ -25,9 +25,13 @@ class data_processor(data_reader):
             
             data=self.mdata
             
+        outer_rads=[0.24,0.12,0.2,0.16]
+            
         self.a_width=a_width
-        self.outer_rad=outer_rad
+        
         self.stars=stars
+        
+        
         
         #list of eccentricities of galaxies
         eccentricities=[0.46,0.22,0.43,0.14]
@@ -39,8 +43,9 @@ class data_processor(data_reader):
                 
                 eccentricity=eccentricities[i]
                 rotation=rotations[i]
+                outer_rad=outer_rads[i]
         #redundant, for estimating eccentricity
-
+        self.outer_rad=outer_rad
         #initialise selection_utils instance for constructing ellipses
         check=selection_utils()
         #list for holding data slices

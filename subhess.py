@@ -1,11 +1,11 @@
 
-from numpy import *
+import numpy as np
 from random import *
 from scipy import *
 from matplotlib import *
 rcdefaults()
 
-def create_hess_diagram(xdata,ydata,ax,label,xlims=[-1,4.5], ylims=[21,11], colormap=cm.plasma,cbarr='None', cbarrtitle='', xlab='$J_0$-$K_0$', ylab='$K_0$'):
+def create_hess_diagram(xdata,ydata,ax,label,xlims=[-1,4.5], ylims=[21,11],levels='None', colormap=cm.plasma,cbarr='None', cbarrtitle='', xlab='$J_0$-$K_0$', ylab='$K_0$'):
     rc('axes',labelsize=25)
     ### Plot all stars in CMD as small points
     ax.plot(xdata,ydata,linestyle='none',marker ='.',ms=1,color='black',zorder=1,label=label)

@@ -69,6 +69,8 @@ class data_loader:
         self.galaxies=galaxies
         self.galaxy=galaxy
         
+
+        
         
         
         
@@ -79,6 +81,7 @@ class data_loader:
             if galaxy==galaxies[i]:
                     
                 file=galaxies[i]
+                self.outer_rad=outer_rads[i]
                 break
         
         #ascii data read in to astropy table

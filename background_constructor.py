@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import pandas as pd
 from data_processor import data_processor
@@ -87,6 +88,8 @@ class background_constructor(data_processor):
     
    def find_background_grad(self,stars='agb',ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
         
+        self.stars=stars
+       
         if self.galaxy=='m32':
             
             ellipticity=0.14
@@ -175,14 +178,29 @@ class background_constructor(data_processor):
         
         m31_alpha=self.rotate_coords(m31xi,m31eta,theta)[0]
         m31_beta=self.rotate_coords(m31xi,m31eta,theta)[1]
+        
+        sns.set_context('paper')
+        
+        params={'legend.fontsize':'12','axes.labelsize':'15',
+        'axes.titlesize':'12','xtick.labelsize':'10',
+        'ytick.labelsize':'10','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
+        plt.rcParams.update(params)
+        plt.rcParams.update({'figure.max_open_warning': 0})
 
         
         if show_figure==True:
         
-            plt.plot(data.alpha,data.beta,marker=marker,markersize=markersize,linestyle='none',color=color)
-            plt.gca().invert_xaxis()
-            plt.gca().set_ylabel(r'$\beta$')
-            plt.gca().set_xlabel(r'$\alpha$')
+            plt.plot(data.alpha,data.beta,marker=marker,markersize=markersize,linestyle='none',color=color,label=self.galaxy.upper())
+            if self.galaxy=='m32':
+                
+                plt.xlim(0.3,-0.3)
+                plt.ylim(-0.3,0.3)
+                
+            else:
+                
+                plt.gca().invert_xaxis()
+            plt.gca().set_ylabel(r'$\beta$ (degrees)')
+            plt.gca().set_xlabel(r'$\alpha$ (degrees)')
         
         corner1=np.array([np.min(data.xi),np.min(data.eta)])
         corner2=np.array([np.min(data.xi),np.max(data.eta)])
@@ -248,7 +266,16 @@ class background_constructor(data_processor):
             x,y=final_bin.exterior.xy
             if show_figure==True:
                 
+                
+                
                 plt.plot(x,y,color='orange')
+                
+                leg = plt.legend(handlelength=0, handletextpad=0, frameon=False,loc='upper right',markerscale=0.001)
+                for item in leg.legendHandles:
+                    item.set_visible(False)
+                
+                plt.savefig(self.galaxy + '_background_bins.png')
+                plt.savefig(self.galaxy + '_background_bins.pdf')
 
             final_bin_area=final_bin.area
             
@@ -312,7 +339,7 @@ class background_constructor(data_processor):
 
    def fit_close_background(self,marker='o',markersize='3',color='black'):
 
-        background =self.background.copy()
+        background = self.background.copy()
         
         
         xdata=-background.m31_bin_locs
@@ -346,21 +373,170 @@ class background_constructor(data_processor):
         else:
             
             s=fit(model,xdata[2:],ydata[2:],weights=1/yerr[2:])
+            
+        plt.figure()
         
-        plt.errorbar(xdata,ydata,yerr=yerr,capsize=2,marker=marker,color=color)
+        sat_xdata=background.bin_locs
         
-        plt.plot(xdata,s(xdata))
+        plt.gca().set_xlabel(r'$\alpha$ (arcmins)')
+        plt.gca().set_ylabel('Density (N/arcmin$^2$)')
+        plt.gca().invert_xaxis()
+        plt.errorbar(sat_xdata,ydata,yerr=yerr,capsize=2,linestyle='none',marker=marker,color=color)
+        
+        plt.plot(sat_xdata,s(xdata),label=self.galaxy.upper())
+        
+        leg = plt.legend(handlelength=0, handletextpad=0, frameon=False,loc='upper right',markerscale=0.001)
+        for item in leg.legendHandles:
+            item.set_visible(False)
+        
+        plt.savefig(self.galaxy + self.stars + '_background_fit.png')
+        plt.savefig(self.galaxy + self.stars + '_background_fit.pdf')
         
         background['density_fit']=s(xdata)
         
-        try:
-            background.to_parquet('backgrounds/' + self.galaxy + self.stars)
-            
-        except:
-            
-            os.system('mkdir backgrounds')
-            background.to_parquet('backgrounds/' + self.galaxy + self.stars)
         
         self.background=background
         
         print(background)
+        
+   def find_close_slice_profile(self):
+        
+       
+        stars=self.stars       
+        print('Make sure youve got a background dataframe for subtraction!')
+        print('You must have run the make_close_background function to create this' )
+        #remake alpha coordinates
+        slice_shapes=self.slice_shapes
+        background=self.background
+        rotate_coords=self.rotate_coords
+
+        if stars=='agb':
+            
+            data=self.data
+            
+        elif stars=='m':
+            
+            
+            data=self.mdata
+            
+        elif stars=='c':
+            
+            data=self.cdata
+            
+        areas=self.areas
+        slices=self.slices
+        bin_shapes=self.bin_shapes
+        
+        outer_rad=self.outer_rad
+        a_width=self.a_width
+        
+        m31ra=10.68470833
+        m31dec=41.26875
+        
+        if self.galaxy=='ngc205':
+            tra=10.09189356
+            tdec=41.68541564
+            
+        elif self.galaxy=='m32':
+            tra=10.6742708
+            tdec=40.8651694
+        
+        m31xi,m31eta=self.eq_to_tan(m31ra,m31dec,tra,tdec)
+        
+
+        
+        #find angle of rotation
+        theta=np.arctan((m31eta)/(m31xi))
+        
+        xi=data.xi.copy()
+        eta=data.eta.copy()
+        theta_deg=np.degrees(theta)
+        #rotate
+        
+        
+        
+        for i in slices:
+            i['alpha']=rotate_coords(xi,eta,theta)[0]
+            i['beta']=rotate_coords(xi,eta,theta)[1]
+        slice_shapes_rot=[]
+        for i in slice_shapes:
+        
+            slice_shapes_rot.append(shapely.affinity.rotate(i,-theta_deg))
+        
+        
+        slice_nums=[]
+        
+        for i in slices:
+            
+            slice_nums.append(len(i.dropna()))
+            
+        slice_nums=np.array(slice_nums)
+        areas=np.array(areas)
+        
+        slice_densities_deg=slice_nums/areas
+        slice_densities_unc=np.sqrt(slice_nums)
+        slice_densities_min=slice_densities_deg/3600
+        slice_densities_unc=(slice_densities_unc/areas)/3600
+        #background columns: bin_densities, bin_uncs, bin_locs
+        #areas in degrees for ease, background in mins
+        new_density=[]
+        new_uncs=[]
+        for i in range(len(slice_shapes_rot)):
+            slice_bin_densities=[]
+            slice_bin_densities_uncs=[]
+            slice_bin_areas=[]
+            for j in background.index:
+                
+
+                
+                if slice_shapes_rot[i].intersects(bin_shapes[j])==True:
+                    
+                    overlap_shape=slice_shapes_rot[i].intersection(bin_shapes[j])
+                    overlap_area=overlap_shape.area
+                    
+                    
+                    #subtract background
+                    overlap_density=slice_densities_min[i]-background.density_fit[j]
+                    overlap_density_unc=np.sqrt(slice_densities_unc[i]**2 + background.bin_uncs[j]**2)
+                    
+                    slice_bin_densities.append(overlap_density)
+                    slice_bin_densities_uncs.append(overlap_density_unc)
+                    slice_bin_areas.append(overlap_area)
+                    
+            slice_bin_areas=np.array(slice_bin_areas)
+            slice_bin_densities=np.array(slice_bin_densities)
+            
+            weightings=slice_bin_areas/slice_shapes_rot[i].area
+            
+            avg_density=np.average(slice_bin_densities,weights=weightings)
+            density_err=(np.sqrt(np.sum(np.square(slice_bin_densities_uncs))))/len(slice_bin_densities)
+            new_density.append(avg_density)
+            new_uncs.append(density_err)
+
+            
+        xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=len(new_density))
+        xdata=xdata*60
+            
+        ydata=new_density
+        yerr=new_uncs
+            
+
+        
+
+        
+        density_distribution=pd.DataFrame({'a':xdata,'density':ydata,'density_err':yerr,'slice_area_deg':areas,'slice_nums':slice_nums})
+        
+
+            
+        outfilename=self.galaxy + stars
+        
+        
+        
+        try:
+            density_distribution.to_parquet('unfit_background_corrected_profiles/' + outfilename)
+            
+        except:
+            
+            os.system('mkdir unfit_background_corrected_profiles')
+            density_distribution.to_parquet('unfit_background_corrected_profiles/' + outfilename)
+            
