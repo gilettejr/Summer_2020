@@ -1,0 +1,198 @@
+import numpy as np
+
+class startup_processes:
+    
+    def __init__(self,galaxy_object):
+        
+        def get_data_and_name_attributes():
+            
+            galaxy_data=self.galaxy_data
+            galaxy_name=self.galaxy_name
+            
+            return galaxy_data,galaxy_name
+        
+        self.galaxy_data=galaxy_object.data
+        self.galaxy_name=galaxy_object.galaxy
+        
+        self.get_data_and_name_attributes=get_data_and_name_attributes
+
+        
+        
+        
+    def CLS_cut(self,cls_bands='norm'):
+        
+        galaxy_data,galaxy_name=self.get_data_and_name_attributes()
+        
+        #set of cuts used for normal data processing
+        if cls_bands=='norm':
+            #m32 treated differently to prevent gradient issues in spatial distribution
+            if galaxy_name=='m32':
+                for i in range(len(galaxy_data.jcis)):
+                    #standard cls cuts made for the rest
+                    if (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0 and galaxy_data.jcis[i]!=-3.0) or (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0 and galaxy_data.kcis[i]!=-3.0) or (galaxy_data.hcis[i]==-8.0) or galaxy_data.jmag[i]-galaxy_data.hmag[i] > 17:
+                        galaxy_data.loc[i]=np.nan
+            
+            else:
+            
+
+            #standard cls cuts made for the rest
+                nines=[]
+                for i in range(len(galaxy_data.jcis)):
+
+                    if galaxy_data.kcis[i]==-9.0 or galaxy_data.jcis[i]==-9.0 or galaxy_data.hcis[i]==-9.0:
+                        nines.append(0)
+                    
+                    if (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0) or (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0) or (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0): 
+                        galaxy_data.loc[i]=np.nan
+        #different combinations of cls cuts included below
+        #can be used to test effect of different cls cuts
+
+            
+        elif cls_bands=='jh' or cls_bands=='hj':
+            
+            if self.galaxy=='m32':
+                for i in range(len(galaxy_data.jcis)):
+                
+                    if (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0 and galaxy_data.jcis[i]!=-3.0) or (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0 and galaxy_data.hcis[i]!=-3.0):
+                        galaxy_data.loc[i]=np.nan
+            
+            else:
+            
+            #removes any non-stellar sources from data
+                for i in range(len(galaxy_data.jcis)):
+                    if (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0) or (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0): 
+                        galaxy_data.loc[i]=np.nan      
+                        
+        elif cls_bands=='hk':
+            
+            if self.galaxy=='m32':
+                for i in range(len(galaxy_data.jcis)):
+                
+                    if (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0 and galaxy_data.kcis[i]!=-3.0) or (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0 and galaxy_data.hcis[i]!=-3.0):
+                        galaxy_data.loc[i]=np.nan
+            
+            else:
+            
+            #removes any non-stellar sources from data
+                for i in range(len(galaxy_data.jcis)):
+                    if (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0) or (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0): 
+                        galaxy_data.loc[i]=np.nan
+                        
+        elif cls_bands =='jk':
+            
+
+            
+            if self.galaxy=='m32':
+                for i in range(len(galaxy_data.jcis)):
+                
+                    if (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0 and galaxy_data.kcis[i]!=-3.0) or (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0 and galaxy_data.jcis[i]!=-3.0):
+                        galaxy_data.loc[i]=np.nan
+            
+            else:
+            
+            #removes any non-stellar sources from data
+                for i in range(len(galaxy_data.jcis)):
+                    if (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0) or (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0): 
+                        galaxy_data.loc[i]=np.nan
+                        
+        elif cls_bands == 'j':
+            
+            if self.galaxy=='m32':
+                for i in range(len(galaxy_data.jcis)):
+                
+                    if (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0 and galaxy_data.jcis[i]!=-3.0):
+                        galaxy_data.loc[i]=np.nan
+            
+            else:
+            
+            #removes any non-stellar sources from data
+                for i in range(len(galaxy_data.jcis)):
+                    if (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0): 
+                        galaxy_data.loc[i]=np.nan
+                        
+        elif cls_bands == 'h':
+            
+            if self.galaxy=='m32':
+                for i in range(len(galaxy_data.jcis)):
+                
+                    if (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0 and galaxy_data.hcis[i]!=-3.0):
+                        galaxy_data.loc[i]=np.nan
+            
+            else:
+            
+            #removes any non-stellar sources from data
+                for i in range(len(galaxy_data.jcis)):
+                    if (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0): 
+                        galaxy_data.loc[i]=np.nan
+                        
+        elif cls_bands == 'k':
+            
+            if self.galaxy=='m32':
+                for i in range(len(galaxy_data.jcis)):
+                
+                    if (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0 and galaxy_data.kcis[i]!=-3.0):
+                        galaxy_data.loc[i]=np.nan
+            
+            else:
+            
+            #removes any non-stellar sources from data
+                for i in range(len(galaxy_data.jcis)):
+                    if (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0): 
+                        galaxy_data.loc[i]=np.nan
+                        
+        elif cls_bands=='all':
+            
+            if self.galaxy=='m32':
+                for i in range(len(galaxy_data.jcis)):
+                
+                    if (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0 and galaxy_data.jcis[i]!=-3.0) or (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0 and galaxy_data.kcis[i]!=-3.0) or (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0 and galaxy_data.hcis[i]!=-3.0):
+                        galaxy_data.loc[i]=np.nan
+            
+            else:
+            
+            #removes any non-stellar sources from data
+                for i in range(len(galaxy_data.jcis)):
+                    if (galaxy_data.kcis[i] != -1.0 and galaxy_data.kcis[i]!=-2.0) or (galaxy_data.hcis[i] != -1.0 and galaxy_data.hcis[i]!=-2.0) or (galaxy_data.jcis[i] != -1.0 and galaxy_data.jcis[i]!=-2.0): 
+                        galaxy_data.loc[i]=np.nan
+                        
+        else:
+            #failure if invalid cls argument chosen upon class initialisation
+            print('Invalid CLS argument chosen, no CLS cut made')
+        #percentage decrease of catalogue length calculated and printed
+        
+        k=len(galaxy_data.jcis)
+        l=len(galaxy_data.jcis.dropna())            
+        decrease=100-(l/k)*100
+    
+        print('CLS cut reduced data by ' + str(int(decrease)) + '%')
+        
+            #function to cut data with large magnitude error
+    #takes datagalaxy_data as input, only used internally in this class
+    
+    def mag_err_cut(self,magerr):
+        
+        galaxy_data,galaxy_name=self.get_data_and_name_attributes()
+        
+        #have to start being careful about referencing index column of datagalaxy_data now since dropna() will have been used
+        
+        for i in galaxy_data.index:
+            if galaxy_data.kerr[i] > magerr or galaxy_data.herr[i] > magerr or galaxy_data.kerr[i] > magerr:
+            
+                galaxy_data.loc[i]=np.nan
+        
+        #percentage decrease of catalogue length calculated and printed
+        
+        k=len(galaxy_data.jcis)
+        l=len(galaxy_data.jcis.dropna())
+        
+        decrease=100-(l/k)*100
+        
+        print('Magerr cut reduced data by ' + str(int(decrease)) + '%')
+            
+            
+            
+    
+    
+    
+    
+    

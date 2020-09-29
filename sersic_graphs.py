@@ -1,4 +1,4 @@
-from data_read import data_read
+from data_read import data_reader
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ class radial_graphs:
             
         
         
-        galaxy_object=data_read(stage=stage,galaxy=galaxy)
+        galaxy_object=data_reader(stage=stage,galaxy=galaxy)
         
         self.galaxy_object=galaxy_object
         

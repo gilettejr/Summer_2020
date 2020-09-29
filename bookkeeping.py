@@ -138,6 +138,33 @@ class bookkeeping:
                 galaxy_object.save_to_parquet('processed_data/agb_crossed_data/' + galaxy_object.galaxy)
             galaxy_object.do_CM_cut()
             galaxy_object.cm_save_to_parquet('processed_data/m_agb_data/' + galaxy_object.galaxy,'processed_data/c_agb_data/' + galaxy_object.galaxy)
+    def make_cls_crossed_data(self,galaxy_type='des'):
+            
+
+            
+        all_galaxy_datasets=self.read_all(stage='cls_cut')
+        for galaxy_object in all_galaxy_datasets:
+            try:
+                galaxy_object.save_to_csv('crossmatching/ukirt_pre/cls_cut' + galaxy_object.galaxy)
+            except:
+
+                os.system('mkdir crossmatching/ukirt_pre/cls_cut')
+                os.system('mkdir crossmatching/gaia/cls_cut')
+                galaxy_object.save_to_csv('crossmatching/ukirt_pre/cls_cut' + galaxy_object.galaxy)
+                
+            
+            crossmatch(galaxy_object.galaxy,path='cls_cut')
+
+        
+        for galaxy_object in all_galaxy_datasets:
+            galaxy_object.gaia_remove('crossmatching/gaia/cls_cut' + galaxy_object.galaxy)
+            try:
+                galaxy_object.save_to_parquet('processed_data/cls_crossed_data/' + galaxy_object.galaxy)
+            except:
+
+                os.system('mkdir processed_data/cls_crossed_data')
+
+                galaxy_object.save_to_parquet('processed_data/cls_crossed_data/' + galaxy_object.galaxy)
         
             
     def update_dsphs(self):

@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
+from data_read import data_reader
 
 def set_graphing_visuals():
     
@@ -13,12 +15,12 @@ def set_graphing_visuals():
     
     
 
-class basic_agb_plotter:
+class basic_agb_plotter(data_reader):
     
-    @staticmethod
-    def plot_kj_cmd(galaxy_object,marker='o',markersize=1,color='black',newfig=False):
+
+    def plot_kj_cmd(self,marker='o',markersize=1,color='black',newfig=False):
         
-        galaxy_data=galaxy_object.data
+        galaxy_data=self.data
         #conditional statements plot only c,m, or both sets depending on 
         #optional stars argument
         
@@ -36,9 +38,9 @@ class basic_agb_plotter:
         plt.ylabel('$K_0$')
         plt.xlabel('$J_0$-$K_0$')
         
-    @staticmethod
-    def plot_hk_cmd(galaxy_object,marker='o',markersize=1,color='black',newfig=False):
-        galaxy_data=galaxy_object.data
+
+    def plot_hk_cmd(self,marker='o',markersize=1,color='black',newfig=False):
+        galaxy_data=self.data
         
         #conditional statements plot only c,m, or both sets depending on 
         #optional stars argument
@@ -55,9 +57,9 @@ class basic_agb_plotter:
         plt.ylabel('$K_0$')
         plt.xlabel('$H_0$-$K_0$')
     
-    @staticmethod    
-    def plot_spatial(galaxy_object,marker='o',markersize=1,color='black'):
-        galaxy_data=galaxy_object.data
+  
+    def plot_spatial(self,marker='o',markersize=1,color='black'):
+        galaxy_data=self.data
     #conditional statement based on stars defines data appropriately
         
         #if c+m cnot chosen for stars argument, data plotted in single plot
@@ -69,10 +71,9 @@ class basic_agb_plotter:
             
         if color!='red':
             plt.gca().invert_xaxis()
-
-    @staticmethod            
-    def plot_contour(galaxy_object,overlay=False):
-        galaxy_data=galaxy_object.data
+           
+    def plot_contour(self,overlay=False):
+        galaxy_data=self.data
         #set graphing visuals
         
 
@@ -88,9 +89,9 @@ class basic_agb_plotter:
             plt.xlabel(r'$\xi$')
             plt.gca().invert_xaxis()
             
-    @staticmethod        
-    def plot_lum(galaxy_data):
-        galaxy_data=galaxy_object.data
+      
+    def plot_lum(self):
+        galaxy_data=self.data
         
         lum_func=data.kmag
         

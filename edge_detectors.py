@@ -9,8 +9,8 @@ from scipy.signal import savgol_filter
 
 #libraries for seperating C and M with non horizontal/perpendicular lines
 
-from data_read import data_read
-class edge_detectors(data_read):
+from data_read import data_reader
+class edge_detectors(data_reader):
     
     
     

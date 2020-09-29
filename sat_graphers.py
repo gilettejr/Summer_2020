@@ -1,9 +1,8 @@
-from graphing_class import graphs
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-class sat(graphs):
+class sat:
 
     def __init__(self,galaxy,pandas=False,spitzer=False):
         
