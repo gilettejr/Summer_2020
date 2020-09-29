@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+
 """
 Created on Sat Sep 28 15:14:03 2019
 
 @author: cameronrobertson
 """
+from FEH_finders import FEH_finders
 from basic_agb_plotter import basic_agb_plotter
 from four_agb_plotter import four_agb_plotter
 from close_data_processor import close_data_processor
@@ -47,8 +47,9 @@ import matplotlib.pyplot as plt
 
 def main():
      
-    runner=background_runner()
-    runner.make_all_close_backgrounds()
+    FEH_finders.find_close_FEH('m32')
+    
+    
     
     
     #e.make_slices(outer_rad=0.4)

@@ -3,6 +3,7 @@ from astropy.modeling import fitting
 from astropy.modeling.models import Sersic1D
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 
 import pandas as pd
@@ -18,13 +19,14 @@ class close_data_processor(data_processor):
     
     def get_close_FEH_slices(self):
         
-        if self.galaxy=='ngc205':
-            
-            cut=5
-            
-        elif self.galaxy=='m32':
-            
-            cut=3
+        sns.set_context('paper')
+        
+        params={'legend.fontsize':'12','axes.labelsize':'15',
+        'axes.titlesize':'12','xtick.labelsize':'10',
+        'ytick.labelsize':'10','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
+        plt.rcParams.update(params)
+        plt.rcParams.update({'figure.max_open_warning': 0})
+        
         
         c_slice_dataframe=pd.read_parquet('unfit_background_corrected_profiles/'+ self.galaxy + 'c')
         
@@ -51,19 +53,25 @@ class close_data_processor(data_processor):
         #print(cm_slices_uncs)
         FEH_slice_uncs=self.CM_to_FEH_uncs(cm_slices,cm_slices_uncs)
 
-        
+
         
         plt.errorbar(slice_a,FEH_slices,marker='o',linestyle='none',color='black',capsize=2,yerr=FEH_slice_uncs)
+        plt.plot(slice_a,FEH_slices,marker='o',linestyle='none',color='black',label=self.galaxy.upper(),markersize=1)
+        
         plt.ylabel('[Fe/H]')
         plt.xlabel('Semi-major axis (arcmins)')
         
-        weights=full_slice_nums[cut:]/total_star_num
+        leg = plt.legend(handlelength=0, handletextpad=0, frameon=False,loc='upper left',markerscale=0.001)
+        for item in leg.legendHandles:
+            item.set_visible(False)
+        
+        weights=full_slice_nums/total_star_num
 
+        #m_slice_dataframe.density=m_slice_dataframe.density[5:]
+        
+        #c_slice_dataframe.density=c_slice_dataframe.density[5:]
         
         
-        
-        
-
         
         new_cm_slices=[]
         new_cm_slices_uncs=[]
@@ -86,10 +94,13 @@ class close_data_processor(data_processor):
         FEH_avg=self.CM_to_FEH(avg_CM)
         
         FEH_avg_unc=self.CM_to_FEH_uncs(avg_CM,avg_CM_unc)
-        print(avg_CM)
-        print(avg_CM_unc)
+
+        print('Average [Fe/H]:')
         print(FEH_avg)
+        print('Uncertainty:')
         print(FEH_avg_unc)
+        
+        plt.savefig(self.galaxy+ '_radial_FEH')
         
         self.FEH_x=slice_a
         self.FEH_y=FEH_slices

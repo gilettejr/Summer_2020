@@ -19,7 +19,7 @@ from matplotlib.patches import Ellipse,Rectangle
 
 class background_constructor(data_processor):
     
-   def find_background_density_border(self,stars='agb',marker='o',markersize='1',color='black',borderwidth=0.07,show_figure=False):
+   def find_background_density_border(self,stars,marker='o',markersize='1',color='black',borderwidth=0.07,show_figure=False):
         
         if stars=='agb':
             
@@ -86,7 +86,7 @@ class background_constructor(data_processor):
             
         return np.array([border_num/border_area,border_err/border_area,border_num]) 
     
-   def find_background_grad(self,stars='agb',ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
+   def find_background_grad(self,stars,ellipse_a=0.15,ellipticity=0.43,clockrot=169.2,marker='o',markersize='1',color='black',show_figure=False,binwidth=0.02):
         
         self.stars=stars
        
@@ -335,7 +335,7 @@ class background_constructor(data_processor):
 #background=pd.read_parquet('205_c_tests')
 
 
-#stars='agb
+
 
    def fit_close_background(self,marker='o',markersize='3',color='black'):
 
@@ -397,12 +397,18 @@ class background_constructor(data_processor):
         
         self.background=background
         
+        print(self.stars)
+        
         print(background)
         
    def find_close_slice_profile(self):
         
        
-        stars=self.stars       
+        stars=self.stars
+        
+        print(stars)
+        print('again')
+        
         print('Make sure youve got a background dataframe for subtraction!')
         print('You must have run the make_close_background function to create this' )
         #remake alpha coordinates
@@ -527,10 +533,12 @@ class background_constructor(data_processor):
         density_distribution=pd.DataFrame({'a':xdata,'density':ydata,'density_err':yerr,'slice_area_deg':areas,'slice_nums':slice_nums})
         
 
-            
-        outfilename=self.galaxy + stars
         
         
+        
+        outfilename=self.galaxy + self.stars
+        
+        print(outfilename)
         
         try:
             density_distribution.to_parquet('unfit_background_corrected_profiles/' + outfilename)

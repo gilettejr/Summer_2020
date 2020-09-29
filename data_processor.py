@@ -5,7 +5,9 @@ from astropy.modeling.models import Sersic1D
 from astropy.modeling import fitting
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib.patches import Ellipse
+
 
 import numpy as np
 
@@ -94,7 +96,15 @@ class data_processor(data_reader):
         self.slices=slices
         self.slice_shapes=ellipse_shapes
         
-    def find_FEH_slices(self,m_background,c_background,crowding_num):
+    def find_FEH_slices(self,m_background,c_background):
+        
+        sns.set_context('paper')
+        
+        params={'legend.fontsize':'12','axes.labelsize':'15',
+        'axes.titlesize':'12','xtick.labelsize':'10',
+        'ytick.labelsize':'10','lines.linewidth':2,'axes.linewidth':2,'animation.html': 'html5'}
+        plt.rcParams.update(params)
+        plt.rcParams.update({'figure.max_open_warning': 0})
         
         #read in AGB data together, and individual C and M catalogues
         cdata=self.cdata
@@ -103,6 +113,13 @@ class data_processor(data_reader):
         outer_rad=self.outer_rad
         a_width=self.a_width
         
+        if self.galaxy=='ngc147':
+            
+            crowding_num=1
+            
+        elif self.galaxy=='ngc185':
+            
+            crowding_num=1
         
         #list of eccentricities of galaxies
 
@@ -223,14 +240,29 @@ class data_processor(data_reader):
         
         avgFEH_unc=self.CM_to_FEH_uncs(avg_cm,avg_cm_unc)
         
+        print('Average [Fe/H]:')
         print(avgFEH)
-        
+        print('Uncertainty:')
         print(avgFEH_unc)
+        
+        
         
         #plot radial distribution
         
-        xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=(outer_rad*1000)/(a_width*1000))
-        #plt.errorbar(xdata,FEH,yerr=FEH_unc,capsize=2,linestyle='none',marker='o',markersize='3',color='black')
+        xdata=np.linspace(outer_rad-a_width/2,0+a_width/2,num=len(FEH))
+        xdata=xdata*60
+        plt.errorbar(xdata,FEH,yerr=FEH_unc,capsize=2,linestyle='none',marker='o',markersize='5',color='black')
+        plt.plot(xdata,FEH,linestyle='none',markersize='1',marker='o',label=self.galaxy.upper(),color='black')
+
+            #i.label_outer()
+        leg = plt.legend(handlelength=0, handletextpad=0, frameon=False,loc='upper left',markerscale=0.001)
+        for item in leg.legendHandles:
+            item.set_visible(False)
+        plt.ylabel('[Fe/H]')
+        plt.xlabel('Semi-major axis (arcmins)')
+        
+        plt.savefig(self.galaxy+ '_radial_FEH')
+        
         m,b=np.polyfit(xdata,FEH,1)
         #plt.plot(xdata, m*xdata + b,color='red')
         
@@ -240,7 +272,7 @@ class data_processor(data_reader):
     
     def fit_slice_count_profile(self,background_deg,crowding_num=0):
         
-        print(background_deg)
+
         
         slices=self.slices
         areas=self.areas

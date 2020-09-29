@@ -11,7 +11,7 @@ class background_runner:
             galaxy_object=background_constructor(galaxy=galaxy,stage='cm')
             galaxy_object.find_background_grad(stars=stars)
             galaxy_object.fit_close_background()
-            galaxy_object.construct_slices()
+            galaxy_object.construct_slices(stars=stars)
             galaxy_object.find_close_slice_profile()
             
         self.make_close_backgrounds=make_close_backgrounds
