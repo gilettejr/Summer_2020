@@ -19,7 +19,8 @@ from cuts_all import cuts_all
 from bookkeeping import bookkeeping
 from edge_detectors import edge_detectors
 
-from background_constructor import background_constructor
+from close_background_constructor import close_background_constructor
+from far_background_constructor import far_background_constructor
 
 from isochrones import isochrones
 from crossmatch_stilts import crossmatch
@@ -45,9 +46,199 @@ import matplotlib.pyplot as plt
 
 #for kde method, start at 18, go upwards in bins of mag=0.4
 
+def run_interactive():
+    
+    print('Enter the number for what you would like to do')
+    
+    print('1 - Process raw UKIRT data from scratch, create intermediate files')
+    print('2 - Add extra cls_crossed data to visualise removal of foreground sequences')
+    print('3 - Visualise / Process data from intermediate files')
+    
+    stage1=input()
+    
+    if stage1=='1':
+        
+        reload_all_data()
+        
+        print('Done, exiting interactive program')
+        
+    elif stage1=='2':
+        
+        b=bookkeeping()
+        b.make_cls_crossed_data()
+        
+        print('Done,exiting interactive program')
+        
+    elif stage1=='3':
+        
+        print('Which stage of processing would you like to visualise')
+        
+        print('1 - CLS + mag cuts only')
+        print('2 - Foreground cut')
+        print('3 - Foreground + TRGB cut (AGB stars only)')
+        print('4 - AGB stars with Gaia crossmatch')
+        
+        stages=['cls_cut','fore_cut','agb','cm']
+        
+        
+        stage2=input()
+        
+        stage=stages[int(stage2)-1]
+        
+        print('Which of the following are you wanting to do?')
+        
+        print('1 - View basic diagrams')
+        print('2 - Carry out fit background subtractions')
+        print('3 - View [Fe/H] distributions from saved background subtracted data')
+        
+        stage3=input()
+        
+        if stage3!='2':
+            
+            
+        
+            print('And for which galaxy?')
+            
+            print('1 - NGC147')
+            print('2 - NGC185')
+            print('3 - NGC205')
+            print('4 - M32')
+            print('5 - ALL')
+            
+            stage4=input()
+        
+            galaxies=['ngc147', 'ngc185', 'ngc205', 'm32']
+            
+            if stage4!='5':
+            
+                galaxy=galaxies[int(stage4)-1]
+                
+            else:
+                
+                galaxy='all'
+            
+        else:
+            
+            print('1 - NGC205')
+            print('2 - M32')
+            print('3 - Both')
+            
+            stage4=input()
+            
+            galaxies=['ngc205', 'm32']
+            
+            galaxy=galaxies[int(stage4)-1]
+        
+        
+        
+        if stage3=='1':
+            
+            if stage4!='5':
+            
+                galaxy_object=basic_agb_plotter(galaxy=galaxy,stage=stage)
+                
+                print('Which of the following would you like to view?')
+                print('1 - J-K CMD')
+                print('2 - H-K CMD')
+                print('3 - 2CD')
+                print('4 - Spatial distribution')
+                
+                stage5=input()
+                
+                if stage5=='1':
+                    
+                    galaxy_object.plot_kj_cmd()
+                    
+                elif stage5=='2':
+                    
+                    galaxy_object.plot_hk_cmd()
+                    
+                elif stage5=='3':
+                    
+                    galaxy_object.plot_cc()
+                    
+                elif stage5=='3':
+                    
+                    galaxy_object.plot_spatial()
+                    
+            else:
+                
+                galaxy_object=four_agb_plotter(stage=stage)
+                
+                print('Which of the following would you like to view?')
+                print('1 - J-K Hess CMD with foreground and TRGB cuts indicated')
+                print('2 - Hess 2CD with C-M cuts indicated')
+                print('3 - Spatial Distributions')
+                
+                stage6=input()
+                
+                if stage6=='1':
+                    
+                    galaxy_object.plot_kj_cmd_hess()
+                    
+                elif stage6=='2':
+                    
+                    galaxy_object.plot_cc_hess()
+                    
+                elif stage6=='3':
+                    
+                    galaxy_object.plot_spatial()
+        elif stage3=='2':
+            
+            if stage4!=3:
+                
+                print('For which stars?')
+                
+                print('1 - All AGB')
+                print('2 - C-stars')
+                print('3 - M-stars')
+                
+                stage7=input()
+                
+                starss=['agb','m','c']
+                
+                stars=starss[int(stage7)-1]
+                
+                runner=background_runner()
+                runner.make_close_backgrounds(galaxy=galaxy,stars=stars)
+                
+                
+            
+            else:
+                
+                print('Doing background corrections for NGC205 and M32, all stars...')
+                
+                runner=background_runner()
+                runner.make_all_close_backgrounds()
+                
+        elif stage3=='3':
+            
+            if galaxy=='ngc147' or 'ngc185':
+                
+                FEH_finders.find_far_FEH(galaxy=galaxy)
+                
+            elif galaxy=='ngc205' or 'm32':
+                
+                FEH_finders.find_close_FEH(galaxy=galaxy)
+                
+            else:
+                
+                for i in range(len(galaxies)):
+                    
+                    if i < 2:
+                        
+                        FEH_finders.find_far_FEH(galaxies[i])
+                        
+                    else:
+                        
+                        FEH_finders.find_close_FEH(galaxies[i])
+            
+        
+        
+
 def main():
      
-    FEH_finders.find_close_FEH('m32')
+    run_interactive()
     
     
     
