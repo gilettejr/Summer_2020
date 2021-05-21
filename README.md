@@ -19,3 +19,5 @@ galaxy_object=basic_agb_plotter(galaxy='ngc205',stage='fore_cut')
 galaxy_object.plot_kj_cmd(galaxy_object)
 
 The options for the galaxy argument are: cls_cut, fore_cut, agb, agb_crossed, cm
+
+Non Python dependencies: You must have Java installed!!!!
