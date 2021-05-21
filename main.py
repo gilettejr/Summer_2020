@@ -19,8 +19,8 @@ from cuts_all import cuts_all
 from bookkeeping import bookkeeping
 from edge_detectors import edge_detectors
 
-from close_background_constructor import close_background_constructor
-from far_background_constructor import far_background_constructor
+from background_constructor import background_constructor
+
 
 from isochrones import isochrones
 from crossmatch_stilts import crossmatch
