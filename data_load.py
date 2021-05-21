@@ -81,7 +81,7 @@ class data_loader:
             if galaxy==galaxies[i]:
                     
                 file=galaxies[i]
-                self.outer_rad=outer_rads[i]
+                #self.outer_rad=outer_rads[i]
                 break
         
         #ascii data read in to astropy table
@@ -400,30 +400,24 @@ class data_loader:
         #plt.errorbar(background.m31_bin_locs,background.bin_densities,yerr=background.bin_uncs,capsize=2,marker=marker,color=color)
         
         
-
-    
-    def read_background(self):
-        
-        self.background=pd.read_parquet('205_background')
-        
         #plot graph in new coordinates
             
         #method to save data as binary parquet file, to be used by data_read class    
-    def save_to_parquet(self,fileloc):
+    def save_to_parquet(self,path):
             
-        self.data.to_parquet(fileloc)
+        self.data.to_parquet(path)
         
         #save m and agb dataframes to separate binary files
-    def cm_save_to_parquet(self,mfileloc,cfileloc):
+    def cm_save_to_parquet(self,mpath,cpath):
         
-        self.mdata.to_parquet(mfileloc)
+        self.mdata.to_parquet(mpath)
         
         
-        self.cdata.to_parquet(cfileloc)
+        self.cdata.to_parquet(cpath)
         
         #save data to _csv, extra index column added for bookkeeping
         #when taken in by topcat for crossmatching with Gaia DR2
-    def save_to_csv(self,fileloc):
+    def save_to_csv(self,path):
         
         data=self.data
         
@@ -431,29 +425,11 @@ class data_loader:
         
         data['orig_index']=orig_index
         
-        data.to_csv(fileloc)
+        data.to_csv(path)
         
         
 
-    #28500    
-    
-        
-    def overplot_ellipse(self,ellipticity,a,PA,marker='o',markersize=1,color='black'):
-        
-        n147ra=[]
-        
-        data=self.data
-        
-        b=a*(1-ellipticity)
-        ell=Ellipse(xy=[0,0],height=a*2,width=b*2,angle=360-PA,facecolor='none',edgecolor='red',linestyle='--',linewidth=2)
-        
-        plt.rc('axes',labelsize=20)
-        fig,ax=plt.subplots()
-        ax.plot(data.xi,data.eta,linestyle='none',marker=marker,markersize=markersize,color=color,zorder=1)
-        ax.add_artist(ell)
-        ax.invert_xaxis()
-        ax.set_ylabel(r'$\eta$')
-        ax.set_xlabel(r'$\xi$')
+
         
     
 

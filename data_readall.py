@@ -277,10 +277,10 @@ class data_readall:
         
         fig,axs=plt.subplots(2,2,sharex=True,sharey=True,figsize=[6,6])
         
-        plotsubhess(n147.jmag-n147.kmag,n147.kmag,ax=axs[0,0],label='NGC 147')
-        plotsubhess(n185.jmag-n185.kmag,n185.kmag,ax=axs[0,1],label='NGC 185')
-        plotsubhess(n205.jmag-n205.kmag,n205.kmag,ax=axs[1,0],label='NGC 205')
-        plotsubhess(m32.jmag-m32.kmag,m32.kmag,ax=axs[1,1],label='M32')
+        subhess.plot_kj_cmd(n147.jmag-n147.kmag,n147.kmag,ax=axs[0,0],label='NGC 147')
+        subhess.plot_kj_cmd(n185.jmag-n185.kmag,n185.kmag,ax=axs[0,1],label='NGC 185')
+        subhess(n205.jmag-n205.kmag,n205.kmag,ax=axs[1,0],label='NGC 205')
+        subhess(m32.jmag-m32.kmag,m32.kmag,ax=axs[1,1],label='M32')
         start_loc=19
         binsize=1
         err_xpos=-0.5
@@ -376,10 +376,10 @@ class data_readall:
         jhcut=[[0.883,0.857],[0.930,0.913]]
         jhlim=3.18
         
-        plotsubhess(n147.jmag-n147.hmag,n147.hmag-n147.kmag,ax=axs[0,0],label='NGC 147')
-        plotsubhess(n185.jmag-n185.hmag,n185.hmag-n185.kmag,ax=axs[0,1],label='NGC 185')
-        plotsubhess(n205.jmag-n205.hmag,n205.hmag-n205.kmag,ax=axs[1,0],label='NGC 205')
-        plotsubhess(m32.jmag-m32.hmag,m32.hmag-m32.kmag,ax=axs[1,1],label='M32')
+        subhess.plot_kj_cmd(n147.jmag-n147.hmag,n147.hmag-n147.kmag,ax=axs[0,0],label='NGC 147')
+        subhess.plot_kj_cmd(n185.jmag-n185.hmag,n185.hmag-n185.kmag,ax=axs[0,1],label='NGC 185')
+        subhess.plot_kj_cmd(n205.jmag-n205.hmag,n205.hmag-n205.kmag,ax=axs[1,0],label='NGC 205')
+        subhess.plot_kj_cmd(m32.jmag-m32.hmag,m32.hmag-m32.kmag,ax=axs[1,1],label='M32')
         
 
         
