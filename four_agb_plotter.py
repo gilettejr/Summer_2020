@@ -250,7 +250,7 @@ class four_agb_plotter:
         sns.scatterplot(
             m32.xi, m32.eta, ax=axs[1, 1], s=markersize, linewidth=0, marker=marker, color='k', label='M32')
 
-        plt.subplots_adjust(wspace=0, hspace=0)
+        #plt.subplots_adjust(wspace=0, hspace=0)
 
         axes = [axs[0, 0], axs[0, 1], axs[1, 0], axs[1, 1]]
         for i in axes:
@@ -272,6 +272,10 @@ class four_agb_plotter:
         axs[1, 1].set_xlabel(r'$\xi$')
         axs[1, 0].set_ylabel(r'$\eta$')
         axs[0, 0].set_ylabel(r'$\eta$')
+        axs[1, 1].set(ylabel=None)
+        axs[0, 1].set(xlabel=None)
+        axs[0, 0].set(xlabel=None)
+        axs[0, 1].set(ylabel=None)
 
         if save == True:
 

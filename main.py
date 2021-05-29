@@ -51,25 +51,18 @@ def run_interactive():
     print('Enter the number for what you would like to do')
 
     print('1 - Process raw UKIRT data from scratch, create intermediate files')
-    print('2 - Add extra cls_crossed data to visualise removal of foreground sequences')
-    print('3 - Visualise / Process data from intermediate files')
+    print('2 - Visualise / Process data from intermediate files')
 
     stage1 = input()
 
     if stage1 == '1':
 
         reload_all_data()
-
+        b = bookkeeping()
+        b.make_cls_crossed_data()
         print('Done, exiting interactive program')
 
     elif stage1 == '2':
-
-        b = bookkeeping()
-        b.make_cls_crossed_data()
-
-        print('Done,exiting interactive program')
-
-    elif stage1 == '3':
 
         print('Which stage of processing would you like to visualise')
 
@@ -87,9 +80,9 @@ def run_interactive():
         print('Which of the following are you wanting to do?')
 
         print('1 - View basic diagrams')
-        print('2 - Carry out fit background subtractions')
+        print('2 - Carry out background fitting and subtractions')
         print(
-            '3 - View [Fe/H] distributions from saved background subtracted data')
+            '3 - View [Fe/H] distributions from saved background subtracted data - you must have run 2 above for this to work')
 
         stage3 = input()
 
@@ -183,11 +176,11 @@ def run_interactive():
 
             if stage4 != 3:
 
-                print('For which stars?')
+                print('For which star background?')
 
-                print('1 - All AGB')
-                print('2 - C-stars')
-                print('3 - M-stars')
+                print('1 - Total AGB background')
+                print('2 - C-star background')
+                print('3 - M-star background')
 
                 stage7 = input()
 
