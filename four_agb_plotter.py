@@ -244,7 +244,7 @@ class four_agb_plotter:
         sns.scatterplot(
             n147.xi, n147.eta, ax=axs[0, 0], s=markersize, linewidth=0, marker=marker, color='k', label='NGC147')
         sns.scatterplot(
-            n185.xi, n147.eta, ax=axs[0, 1], s=markersize, linewidth=0, marker=marker, color='k', label='NGC185')
+            n185.xi, n185.eta, ax=axs[0, 1], s=markersize, linewidth=0, marker=marker, color='k', label='NGC185')
         sns.scatterplot(
             n205.xi, n205.eta, ax=axs[1, 0], s=markersize, linewidth=0, marker=marker,  color='k', label='NGC205')
         sns.scatterplot(
