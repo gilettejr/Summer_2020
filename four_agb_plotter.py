@@ -242,13 +242,13 @@ class four_agb_plotter:
             2, 2, sharex=False, sharey=False, figsize=[6, 6])
 
         sns.scatterplot(
-            n147.xi, n147.eta, ax=axs[0, 0], marker=marker, color='k', label='NGC147')
+            n147.xi, n147.eta, ax=axs[0, 0], s=markersize, linewidth=0, marker=marker, color='k', label='NGC147')
         sns.scatterplot(
-            n185.xi, n147.eta, ax=axs[0, 1], marker=marker, color='k', label='NGC185')
+            n185.xi, n147.eta, ax=axs[0, 1], s=markersize, linewidth=0, marker=marker, color='k', label='NGC185')
         sns.scatterplot(
-            n205.xi, n205.eta, ax=axs[1, 0], marker=marker,  color='k', label='NGC205')
+            n205.xi, n205.eta, ax=axs[1, 0], s=markersize, linewidth=0, marker=marker,  color='k', label='NGC205')
         sns.scatterplot(
-            m32.xi, m32.eta, ax=axs[1, 1], marker=marker, color='k', label='M32')
+            m32.xi, m32.eta, ax=axs[1, 1], s=markersize, linewidth=0, marker=marker, color='k', label='M32')
 
         plt.subplots_adjust(wspace=0, hspace=0)
 
@@ -260,14 +260,14 @@ class four_agb_plotter:
             for item in leg.legendHandles:
                 item.set_visible(False)
 
-        for i in range(2):
+       # for i in range(2):
 
-            for j in range(2):
+            # for j in range(2):
 
-                axs[i, j].xaxis.set_major_locator(plt.MaxNLocator(5))
-                axs[i, j].yaxis.set_major_locator(plt.MaxNLocator(5))
-                axs[i, j].xaxis.set_minor_locator(MultipleLocator(0.5))
-                axs[i, j].yaxis.set_minor_locator(MultipleLocator(0.5))
+                #axs[i, j].xaxis.set_major_locator(plt.MaxNLocator(5))
+                #axs[i, j].yaxis.set_major_locator(plt.MaxNLocator(5))
+                #axs[i, j].xaxis.set_minor_locator(MultipleLocator(0.5))
+                #axs[i, j].yaxis.set_minor_locator(MultipleLocator(0.5))
         axs[1, 0].set_xlabel(r'$\xi$')
         axs[1, 1].set_xlabel(r'$\xi$')
         axs[1, 0].set_ylabel(r'$\eta$')
