@@ -63,16 +63,6 @@ class four_agb_plotter:
         n205 = self.n205
         m32 = self.m32
 
-        n147_c = self.n147_cm.cdata
-        n185_c = self.n185_cm.cdata
-        n205_c = self.n205_cm.cdata
-        m32_c = self.m32_cm.cdata
-
-        n147_m = self.n147_cm.mdata
-        n185_m = self.n185_cm.mdata
-        n205_m = self.n205_cm.mdata
-        m32_m = self.m32_cm.mdata
-
         dim_data = [[n147.data, n185.data], [n205.data, m32.data]]
 
         sns.set_context('paper')
@@ -103,7 +93,7 @@ class four_agb_plotter:
         subhess.plot_kj_cmd(n185, ax=axs[0, 1], label='NGC185')
         subhess.plot_kj_cmd(n205, ax=axs[1, 0], label='NGC205')
         subhess.plot_kj_cmd(m32, ax=axs[1, 1], label='M32')
-        start_loc = 19
+        start_loc = 18
         binsize = 1
         err_xpos = -0.5
         for i in range(2):

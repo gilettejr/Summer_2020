@@ -154,7 +154,8 @@ def run_interactive():
 
                 galaxy_object = four_agb_plotter(stage=stage)
 
-                print('Which of the following would you like to view?')
+                print(
+                    'Which of the following would you like to view? The result will be saved')
                 print('1 - J-K Hess CMD with foreground and TRGB cuts indicated')
                 print('2 - Hess 2CD with C-M cuts indicated')
                 print('3 - Spatial Distributions')
@@ -163,15 +164,15 @@ def run_interactive():
 
                 if stage6 == '1':
 
-                    galaxy_object.plot_kj_cmd_hess()
+                    galaxy_object.plot_kj_cmd_hess(save=True)
 
                 elif stage6 == '2':
 
-                    galaxy_object.plot_cc_hess()
+                    galaxy_object.plot_cc_hess(save=True)
 
                 elif stage6 == '3':
 
-                    galaxy_object.plot_spatial()
+                    galaxy_object.plot_spatial(save=True)
         elif stage3 == '2':
 
             if stage4 != 3:
