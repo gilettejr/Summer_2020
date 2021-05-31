@@ -81,9 +81,10 @@ def run_interactive():
         print('Which of the following are you wanting to do?')
 
         print('1 - View basic diagrams')
-        print('2 - View background fitting profiles for NGC205 or M32')
-        print(
-            '3 - View [Fe/H] distributions from saved background subtracted data')
+        if stage2 == '4':
+            print('2 - View background fitting profiles for NGC205 or M32')
+            print(
+                '3 - View [Fe/H] distributions from saved background subtracted data')
 
         stage3 = input()
 
@@ -117,8 +118,8 @@ def run_interactive():
             stage4 = input()
 
             galaxies = ['ngc205', 'm32']
-        if stage4 != '3':
-            galaxy = galaxies[int(stage4)-1]
+            if stage4 != '3':
+                galaxy = galaxies[int(stage4)-1]
 
         if stage3 == '1':
 
