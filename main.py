@@ -49,26 +49,28 @@ import matplotlib.pyplot as plt
 def run_interactive():
 
     print('Enter the number for what you would like to do')
-
-    print('1 - Process raw UKIRT data from scratch, create intermediate files')
-    print('2 - Visualise / Process data from intermediate files')
+    # run this initially - saves everything you need for the other options
+    print('1 - Process raw UKIRT data from scratch, create intermediate files and background profiles')
+    # everything else is in here
+    print('2 - Visualise data from intermediate files')
 
     stage1 = input()
 
     if stage1 == '1':
 
         reload_all_data()
-
+        runner = background_runner()
+        runner.make_all_close_backgrounds()
         print('Done, exiting interactive program')
 
     elif stage1 == '2':
 
         print('Which stage of processing would you like to visualise')
 
-        print('1 - CLS + mag cuts only')
-        print('2 - Foreground cut')
-        print('3 - Foreground + TRGB cut (AGB stars only)')
-        print('4 - AGB stars with Gaia crossmatch')
+        print('1 - No colour cuts - only CLS and Mag err cuts have been applied')
+        print('2 - Foreground colour cut, leaving only AGB and RGB stars')
+        print('3 - Foreground + TRGB cut, leaving only AGB stars')
+        print('4 - AGB stars only, plus Gaia crossmatching cut (final data)')
 
         stages = ['cls_cut', 'fore_cut', 'agb', 'cm']
 
@@ -79,9 +81,9 @@ def run_interactive():
         print('Which of the following are you wanting to do?')
 
         print('1 - View basic diagrams')
-        print('2 - Carry out background fitting and subtractions')
+        print('2 - View background fitting profiles for NGC205 or M32')
         print(
-            '3 - View [Fe/H] distributions from saved background subtracted data - you must have run 2 above for this to work')
+            '3 - View [Fe/H] distributions from saved background subtracted data')
 
         stage3 = input()
 
@@ -108,15 +110,14 @@ def run_interactive():
                 galaxy = 'all'
 
         else:
-
+            print('Which galaxy would you like to generate a graph for?')
+            print('This will likely take a while')
             print('1 - NGC205')
             print('2 - M32')
-            print('3 - Both')
-
             stage4 = input()
 
             galaxies = ['ngc205', 'm32']
-
+        if stage4 != '3':
             galaxy = galaxies[int(stage4)-1]
 
         if stage3 == '1':
@@ -174,7 +175,7 @@ def run_interactive():
                     galaxy_object.plot_spatial(save=True)
         elif stage3 == '2':
 
-            if stage4 != 3:
+            if stage4 != '3':
 
                 print('For which star background?')
 
