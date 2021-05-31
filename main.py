@@ -58,8 +58,7 @@ def run_interactive():
     if stage1 == '1':
 
         reload_all_data()
-        b = bookkeeping()
-        b.make_cls_crossed_data()
+
         print('Done, exiting interactive program')
 
     elif stage1 == '2':
@@ -201,25 +200,13 @@ def run_interactive():
 
         elif stage3 == '3':
 
-            if galaxy == 'ngc147' or 'ngc185':
+            if galaxy == 'ngc147' or galaxy == 'ngc185':
 
                 FEH_finders.find_far_FEH(galaxy=galaxy)
 
-            elif galaxy == 'ngc205' or 'm32':
+            elif galaxy == 'ngc205' or galaxy == 'm32':
 
                 FEH_finders.find_close_FEH(galaxy=galaxy)
-
-            else:
-
-                for i in range(len(galaxies)):
-
-                    if i < 2:
-
-                        FEH_finders.find_far_FEH(galaxies[i])
-
-                    else:
-
-                        FEH_finders.find_close_FEH(galaxies[i])
 
 
 def main():

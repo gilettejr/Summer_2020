@@ -251,8 +251,15 @@ def read_table():
     gai_table = gai_table[['RA', 'DEC', 'jmag', 'jerr', 'hmag',
                            'herr', 'kmag', 'kerr', 'galaxy', 'class']]
     gai_table = gai_table.reset_index(drop=True)
-    print(gai_table)
+    table.to_csv('agb_master_table.csv')
+    gai_table.to_csv('gai_table.csv')
 
 
-make_table()
-read_table()
+def read_gaia_table():
+    gai_table = pd.read_csv('gai_source.csv')
+    gai_table = gai_table[['RA_2', 'DEC_2', 'source_id']]
+    gai_table.to_csv('gaia_master_table.csv')
+
+
+# make_table()
+read_gaia_table()
