@@ -10,8 +10,10 @@ def create_hess_diagram(xdata, ydata, ax, label, xlims=[-1, 4.5], ylims=[21, 11]
     rc('axes', labelsize=25)
     # Plot all stars in CMD as small points
     ax.plot(xdata, ydata, linestyle='none', marker='.',
-            ms=1, color='black', zorder=1, label=label)
-
+            ms=1, color='dimgrey', zorder=1, label=label)
+    # fix for not plotting bug
+    xdata = xdata.dropna()
+    ydata = ydata.dropna()
     # Use color and magnitude data to split and average into a binned 2D histogram
     Z, xedges, yedges = np.histogram2d(xdata, ydata, bins=(300, 300))
 
