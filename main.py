@@ -181,8 +181,8 @@ def run_interactive():
                 print('For which star background?')
 
                 print('1 - Total AGB background')
-                print('2 - C-star background')
-                print('3 - M-star background')
+                print('2 - M-star background')
+                print('3 - C-star background')
 
                 stage7 = input()
 
