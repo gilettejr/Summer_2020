@@ -206,6 +206,10 @@ class four_agb_plotter:
 
                 axs[i, j].xaxis.set_minor_locator(MultipleLocator(0.2))
                 axs[i, j].yaxis.set_minor_locator(MultipleLocator(0.2))
+        axs[1, 0].set_xlabel('(J-H)$_0$')
+        axs[1, 1].set_xlabel('(J-H)$_0$')
+        axs[1, 0].set_ylabel('(H-K)$_0$')
+        axs[0, 0].set_ylabel('(H-K)$_0$')
 
         if save == True:
 
