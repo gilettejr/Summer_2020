@@ -89,7 +89,7 @@ class basic_agb_plotter(data_reader):
     def plot_lum(self):
         galaxy_data = self.data
 
-        lum_func = data.kmag
+        lum_func = self.data.kmag
 
         plt.figure()
 
@@ -99,10 +99,6 @@ class basic_agb_plotter(data_reader):
         plt.gca().invert_xaxis()
 
     # graphing method for plotting h-k/j-h 2CD
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from data_read import data_reader
 
 
 def set_graphing_visuals():
