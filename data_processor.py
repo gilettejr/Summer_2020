@@ -63,6 +63,7 @@ class data_processor(data_reader):
             ellipse_shapes.append(ellipse[2])
 
         self.ellipticity = eccentricity
+        self.rotation = rotation
 
         for i in range(len(slices)-1):
 
@@ -333,7 +334,7 @@ class data_processor(data_reader):
         # plt.xlabel('a/deg')
         # plt.ylabel('[Fe/H]')
 
-    def overplot_ellipses(self, ellipticity, a_inner, a_outer, PA, marker='o', markersize=1, color='black'):
+    def plot_ellipses(self, ellipticity, a_inner, a_outer, PA, marker='o', markersize=1, color='black'):
 
         data = self.data
         majors = np.linspace(a_inner, a_outer, num=int(
@@ -352,6 +353,8 @@ class data_processor(data_reader):
                 markersize=markersize, color=color, zorder=1)
         for i in ells:
             ax.add_artist(i)
+        ax.set_ylim(-0.25, 0.25)
+        ax.set_xlim(-0.2, 0.2)
         ax.invert_xaxis()
         ax.set_ylabel(r'$\eta$')
         ax.set_xlabel(r'$\xi$')
