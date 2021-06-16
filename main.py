@@ -132,6 +132,8 @@ def run_interactive():
                 print('2 - H-K CMD')
                 print('3 - 2CD')
                 print('4 - Spatial distribution')
+                print(
+                    '5 - Spatial distribution for ngc147 or ngc185 with background border regions indicated')
 
                 stage5 = input()
 
@@ -150,6 +152,10 @@ def run_interactive():
                 elif stage5 == '4':
 
                     galaxy_object.plot_spatial()
+                elif stage5 == '5':
+                    galaxy_object = background_constructor(galaxy=galaxy)
+                    galaxy_object.find_background_density_border(
+                        stars='agb', show_figure=True)
 
             else:
 

@@ -80,7 +80,7 @@ class background_constructor(data_processor):
                                  width=inner_corner_locs[0][0] -
                                  inner_corner_locs[2]
                                  [0], height=inner_corner_locs[0][1]-inner_corner_locs[2][1],
-                                 fill=False)]
+                                 fill=False, color='red')]
 
             plt.rc('axes', labelsize=20)
             fig, ax = plt.subplots()
