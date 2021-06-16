@@ -156,6 +156,22 @@ def run_interactive():
                     galaxy_object = background_constructor(galaxy=galaxy)
                     galaxy_object.find_background_density_border(
                         stars='agb', show_figure=True)
+                    print(
+                        'Would you like to also generate a plot of the flat background densities in this region? y/n')
+                    choice = input()
+                    if choice == 'y' or choice == 'yes':
+                        galaxy_object = background_constructor(galaxy=galaxy)
+                        plt.figure()
+                        agb = galaxy_object.find_background_density_border(
+                            stars='agb', show_figure=False)
+                        m = galaxy_object.find_background_density_border(
+                            stars='m', show_figure=False)
+                        c = galaxy_object.find_background_density_border(
+                            stars='c', show_figure=False)
+
+                        plt.bar(['agb', 'm', 'c'], [
+                                agb[0], m[0], c[0]], color='black')
+                        plt.ylabel('sources/degrees$^2$')
 
             else:
 

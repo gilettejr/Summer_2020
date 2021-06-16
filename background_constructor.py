@@ -26,7 +26,7 @@ class background_constructor(data_processor):
 
     def find_background_density_border(self, stars, marker='o', markersize='1',
                                        color='black', borderwidth=0.07,
-                                       show_figure=False):
+                                       show_figure=False, show_density=False):
         # select star density to be returned
         # all agb stars
         if stars == 'agb':
@@ -92,6 +92,7 @@ class background_constructor(data_processor):
             ax.invert_xaxis()
             ax.set_ylabel(r'$\eta$')
             ax.set_xlabel(r'$\xi$')
+            plt.savefig(self.galaxy + ' flat borders')
         # returns numerical density value and error in n/deg^2
         return np.array([border_num/border_area,
                          border_err/border_area, border_num])
