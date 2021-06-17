@@ -100,7 +100,7 @@ class background_constructor(data_processor):
     # method to produce background density function for ngc205 or m32
     def find_background_grad(self, stars, ellipse_a=0.15, ellipticity=0.43,
                              clockrot=169.2, marker='o', markersize='1',
-                             color='black', show_figure=False, binwidth=0.02):
+                             color='black', show_figure=False, binwidth=0.02, show_rotate=False):
         # same process carried out for c, m or agb stars, defined as argument
         self.stars = stars
         # default arguments for ngc205, reset here if m32 chosen
@@ -154,8 +154,24 @@ class background_constructor(data_processor):
         # rotated coordinates constructed
         data['alpha'] = self.rotate_coords(xi, eta, theta)[0]
         data['beta'] = self.rotate_coords(xi, eta, theta)[1]
-        # m31 coordinates found in terms of alpha and beta
-        # conversion from radians required for imported coordinates
+        if show_rotate == True:
+            plt.figure()
+            params = {'legend.fontsize': '12', 'axes.labelsize': '20',
+                      'axes.titlesize': '12', 'xtick.labelsize': '10',
+                      'ytick.labelsize': '10', 'lines.linewidth': 2, 'axes.linewidth': 2, 'animation.html': 'html5'}
+            plt.rcParams.update(params)
+            plt.rcParams.update({'figure.max_open_warning': 0})
+
+            markersize = 3
+            marker = 'o'
+            plt.scatter(data['alpha'], data['beta'],
+                        marker=marker, s=markersize)
+            plt.xlabel(r'$\alpha$')
+            plt.ylabel(r'$\beta$')
+            plt.gca().invert_xaxis()
+            plt.savefig(self.galaxy+'_rotated_coords')
+            # m31 coordinates found in terms of alpha and beta
+            # conversion from radians required for imported coordinates
         m31xi = np.degrees(m31xi)
         m31eta = np.degrees(m31eta)
 

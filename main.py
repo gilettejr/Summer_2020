@@ -8,9 +8,9 @@ from FEH_finders import FEH_finders
 from basic_agb_plotter import basic_agb_plotter
 from four_agb_plotter import four_agb_plotter
 from close_data_processor import close_data_processor
-#from runners import run_both,run_rgb,run_cross,kde_separator
-#from iso_utils import import_isos
-#from designations import ratio_utils
+# from runners import run_both,run_rgb,run_cross,kde_separator
+# from iso_utils import import_isos
+# from designations import ratio_utils
 from data_load import data_loader
 from data_read import data_reader
 from data_readall import data_readall
@@ -27,7 +27,7 @@ from crossmatch_stilts import crossmatch
 from selection_utils import selection_utils
 
 from background_runner import background_runner
-#from stack import stack
+# from stack import stack
 from HESSCMD import plotHess
 
 from reload_all_data import reload_all_data
@@ -82,9 +82,10 @@ def run_interactive():
 
         print('1 - View basic diagrams')
         if stage2 == '4':
-            print('2 - View background fitting profiles for NGC205 or M32')
             print(
-                '3 - View [Fe/H] distributions from saved background subtracted data')
+                '2 - View background fitting profiles for NGC205 or M32 or view rotated coordinates')
+            print(
+                '3 - View [Fe/H] distributions and elliptical bins from saved background subtracted data')
 
         stage3 = input()
 
@@ -200,27 +201,28 @@ def run_interactive():
 
             if stage4 != '3':
 
-                print('For which star background?')
+                print(
+                    'For which star background? Alternatively, press 4 to view rotated coordinates')
 
                 print('1 - Total AGB background')
                 print('2 - M-star background')
                 print('3 - C-star background')
+                print('4 - View AGB stars in rotated coordinate system')
 
                 stage7 = input()
 
-                starss = ['agb', 'm', 'c']
+                if stage7 == '4':
+                    runner = background_runner()
+                    runner.show_rotated_coords(galaxy=galaxy, stars='agb')
 
-                stars = starss[int(stage7)-1]
+                else:
 
-                runner = background_runner()
-                runner.make_close_backgrounds(galaxy=galaxy, stars=stars)
+                    starss = ['agb', 'm', 'c']
 
-            else:
+                    stars = starss[int(stage7)-1]
 
-                print('Doing background corrections for NGC205 and M32, all stars...')
-
-                runner = background_runner()
-                runner.make_all_close_backgrounds()
+                    runner = background_runner()
+                    runner.make_close_backgrounds(galaxy=galaxy, stars=stars)
 
         elif stage3 == '3':
 

@@ -358,3 +358,4 @@ class data_processor(data_reader):
         ax.invert_xaxis()
         ax.set_ylabel(r'$\eta$')
         ax.set_xlabel(r'$\xi$')
+        plt.savefig(self.galaxy + 'elliptical_bins')
