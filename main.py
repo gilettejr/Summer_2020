@@ -58,10 +58,17 @@ def run_interactive():
 
     if stage1 == '1':
 
-        reload_all_data()
-        runner = background_runner()
-        runner.make_all_close_backgrounds()
-        print('Done, exiting interactive program')
+        print("Are you sure you wish to process the UKIRT data from scratch (Y/n)")
+
+        checkrerun = input()
+
+        if checkrerun == "Y":
+            reload_all_data()
+            runner = background_runner()
+            runner.make_all_close_backgrounds()
+            print('Done, exiting interactive program')
+        else:
+            run_interactive()
 
     elif stage1 == '2':
 

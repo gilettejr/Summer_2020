@@ -92,7 +92,7 @@ class background_constructor(data_processor):
             ax.invert_xaxis()
             ax.set_ylabel(r'$\eta$')
             ax.set_xlabel(r'$\xi$')
-            plt.savefig(self.galaxy + ' flat borders')
+            plt.savefig(self.galaxy + '_flat borders')
         # returns numerical density value and error in n/deg^2
         return np.array([border_num/border_area,
                          border_err/border_area, border_num])
