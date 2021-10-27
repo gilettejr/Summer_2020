@@ -20,7 +20,7 @@ cloudpickle==1.6.0
 cookiecutter==1.7.3
 cryptography==3.4.7
 cycler==0.10.0
-dask==2.25.0
+dask==2021.10.0
 decorator==4.4.2
 defusedxml==0.7.1
 descartes==1.1.0
