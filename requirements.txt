@@ -140,7 +140,7 @@ tinycss2==1.1.0
 toml==0.10.2
 tornado==6.0.4
 traitlets==5.0.3
-ujson==4.0.2
+ujson==5.1.0
 urllib3==1.25.10
 watchdog==1.0.2
 wcwidth==0.2.5
